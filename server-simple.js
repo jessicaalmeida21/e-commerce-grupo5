@@ -23,7 +23,7 @@ const corsOptions = {
         } else {
             if (process.env.NODE_ENV === 'development') {
                 callback(null, true);
-            } else {
+    } else {
                 callback(new Error('Não permitido pelo CORS'));
             }
         }
@@ -143,6 +143,16 @@ app.get('/api/products', (req, res) => {
             pageSize: pageSize,
             totalPages: Math.ceil(mockProducts.length / pageSize)
         }
+    });
+});
+
+// Healthcheck endpoint para Railway
+app.get('/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        version: '1.0.0'
     });
 });
 
