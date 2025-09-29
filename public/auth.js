@@ -37,41 +37,48 @@ const registerForm = document.getElementById('register-form');
     }
 
     async handleLogin(e) {
-    e.preventDefault();
-    
+        e.preventDefault();
+        
         const formData = new FormData(e.target);
-    const loginData = {
-        email: formData.get('email'),
+        const loginData = {
+            email: formData.get('email'),
             password: formData.get('password'),
             remember: formData.get('remember') === 'on'
-    };
+        };
 
-    try {
-            const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: {
-                    'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(loginData)
-        });
+        // Modo demo - verificar se há usuário cadastrado
+        try {
+            const savedUser = localStorage.getItem('demo_user');
+            
+            if (!savedUser) {
+                this.showNotification('Nenhuma conta encontrada. Faça o cadastro primeiro.', 'error');
+                return;
+            }
 
-            const result = await response.json();
+            const userData = JSON.parse(savedUser);
+            
+            // Verificar se o email corresponde (simulação)
+            if (userData.email !== loginData.email) {
+                this.showNotification('Email não encontrado. Verifique os dados.', 'error');
+                return;
+            }
 
-        if (response.ok) {
-                this.currentUser = result.user;
-                this.saveUserToStorage(result.user, result.token, loginData.remember);
-                this.showNotification('Login realizado com sucesso!', 'success');
-                
-                // Redirect to dashboard or home
+            // Simular delay de rede
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Login bem-sucedido
+            this.currentUser = userData;
+            localStorage.setItem('demo_logged_in', 'true');
+            
+            this.showNotification(`Bem-vindo, ${userData.firstName}!`, 'success');
+            
             setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-            }, 1000);
-        } else {
-                this.showNotification(result.message || 'Erro ao fazer login', 'error');
-        }
-    } catch (error) {
+                window.location.href = 'index.html';
+            }, 1500);
+            
+        } catch (error) {
             console.error('Login error:', error);
-            this.showNotification('Erro de conexão. Tente novamente.', 'error');
+            this.showNotification('Erro ao fazer login. Tente novamente.', 'error');
         }
     }
 
@@ -120,7 +127,7 @@ const registerForm = document.getElementById('register-form');
             localStorage.setItem('demo_user', JSON.stringify(userData));
             localStorage.setItem('demo_logged_in', 'true');
 
-            this.showNotification('Conta criada com sucesso! Redirecionando...', 'success');
+            this.showNotification('Conta criada com sucesso! Login automático realizado...', 'success');
             
             setTimeout(() => {
                 window.location.href = 'index.html';
@@ -210,20 +217,37 @@ const registerForm = document.getElementById('register-form');
     }
 
     loadUserFromStorage() {
-        const user = localStorage.getItem('user') || sessionStorage.getItem('user');
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        // Verificar se está logado em modo demo
+        const isLoggedIn = localStorage.getItem('demo_logged_in');
+        const demoUser = localStorage.getItem('demo_user');
         
-        if (user && token) {
-            this.currentUser = JSON.parse(user);
+        if (isLoggedIn === 'true' && demoUser) {
+            this.currentUser = JSON.parse(demoUser);
+            this.updateUIForLoggedUser();
+        } else {
+            // Verificar modo normal (com banco de dados)
+            const user = localStorage.getItem('user') || sessionStorage.getItem('user');
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            
+            if (user && token) {
+                this.currentUser = JSON.parse(user);
+                this.updateUIForLoggedUser();
+            }
         }
     }
 
     logout() {
         this.currentUser = null;
+        
+        // Limpar dados do modo normal
         localStorage.removeItem('user');
         localStorage.removeItem('token');
         sessionStorage.removeItem('user');
         sessionStorage.removeItem('token');
+        
+        // Limpar dados do modo demo
+        localStorage.removeItem('demo_user');
+        localStorage.removeItem('demo_logged_in');
         
         this.showNotification('Logout realizado com sucesso!', 'success');
         setTimeout(() => {
