@@ -1,409 +1,409 @@
 const express = require('express');
-const { pool } = require('../config/database');
-const { authenticateToken } = require('../middleware/auth');
-const { body, validationResult } = require('express-validator');
-const crypto = require('crypto');
-const QRCode = require('qrcode');
-
+const Payment = require('../models/Payment');
 const router = express.Router();
 
-// Mock de cartões para validação
-const MOCK_CARDS = {
-    '4111111111111111': { type: 'credit', status: 'approved' },
-    '4111111111111112': { type: 'credit', status: 'declined', reason: 'insufficient_funds' },
-    '4111111111111113': { type: 'credit', status: 'declined', reason: 'do_not_honor' },
-    '5555555555554444': { type: 'credit', status: 'approved' },
-    '4000000000000002': { type: 'debit', status: 'approved' },
-    '4000000000000003': { type: 'debit', status: 'declined', reason: 'insufficient_funds' }
+// Mock de banco de dados em memória para pagamentos
+let payments = [];
+
+// Mock de dados hardcoded para validação
+const mockCardData = {
+    // Cartões de crédito VISA
+    visa: [
+        { pan: '4111111111111111', cvv: '123', expiryMonth: 12, expiryYear: 2025, result: 'approved' },
+        { pan: '4000000000000002', cvv: '123', expiryMonth: 12, expiryYear: 2025, result: 'declined', errorCode: 'insufficient_funds' },
+        { pan: '4000000000000069', cvv: '123', expiryMonth: 12, expiryYear: 2025, result: 'declined', errorCode: 'expired_card' },
+        { pan: '4000000000000127', cvv: '123', expiryMonth: 12, expiryYear: 2025, result: 'declined', errorCode: 'invalid_cvv' },
+        { pan: '4000000000000119', cvv: '123', expiryMonth: 12, expiryYear: 2025, result: 'declined', errorCode: 'do_not_honor' },
+        { pan: '4000000000000259', cvv: '123', expiryMonth: 12, expiryYear: 2025, result: 'declined', errorCode: 'limit_exceeded' }
+    ],
+    // Cartões de crédito MASTERCARD
+    mastercard: [
+        { pan: '5555555555554444', cvv: '123', expiryMonth: 12, expiryYear: 2025, result: 'approved' },
+        { pan: '5200000000000007', cvv: '123', expiryMonth: 12, expiryYear: 2025, result: 'declined', errorCode: 'insufficient_funds' },
+        { pan: '5200000000000023', cvv: '123', expiryMonth: 12, expiryYear: 2025, result: 'declined', errorCode: 'expired_card' },
+        { pan: '5200000000000031', cvv: '123', expiryMonth: 12, expiryYear: 2025, result: 'declined', errorCode: 'invalid_cvv' },
+        { pan: '5200000000000049', cvv: '123', expiryMonth: 12, expiryYear: 2025, result: 'declined', errorCode: 'do_not_honor' },
+        { pan: '5200000000000056', cvv: '123', expiryMonth: 12, expiryYear: 2025, result: 'declined', errorCode: 'limit_exceeded' }
+    ],
+    // Cartões de débito VISA
+    visaDebit: [
+        { pan: '4111111111111111', cvv: '123', expiryMonth: 12, expiryYear: 2025, result: 'approved' },
+        { pan: '4000000000000002', cvv: '123', expiryMonth: 12, expiryYear: 2025, result: 'declined', errorCode: 'insufficient_funds' }
+    ],
+    // Cartões de débito MASTERCARD
+    mastercardDebit: [
+        { pan: '5555555555554444', cvv: '123', expiryMonth: 12, expiryYear: 2025, result: 'approved' },
+        { pan: '5200000000000007', cvv: '123', expiryMonth: 12, expiryYear: 2025, result: 'declined', errorCode: 'insufficient_funds' }
+    ]
 };
 
-// Validações
-const paymentValidation = [
-    body('order_id').isInt({ min: 1 }).withMessage('ID do pedido inválido'),
-    body('payment_method').isIn(['credit_card', 'debit_card', 'pix'])
-        .withMessage('Método de pagamento inválido'),
-    body('installments').optional().isInt({ min: 1, max: 10 })
-        .withMessage('Parcelas deve ser entre 1 e 10')
+// Mock de chaves PIX
+const mockPixKeys = [
+    'pix@e2etreinamentos.com.br',
+    '11999999999',
+    '12345678901',
+    '12345678000195'
 ];
 
-const cardValidation = [
-    body('card_number').matches(/^\d{16}$/).withMessage('Número do cartão deve ter 16 dígitos'),
-    body('cvv').matches(/^\d{3,4}$/).withMessage('CVV deve ter 3 ou 4 dígitos'),
-    body('expiry_month').isInt({ min: 1, max: 12 }).withMessage('Mês inválido'),
-    body('expiry_year').isInt({ min: new Date().getFullYear() }).withMessage('Ano inválido'),
-    body('cardholder_name').trim().isLength({ min: 2 }).withMessage('Nome do portador é obrigatório')
-];
+// Middleware de autenticação
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
 
-// Calcular parcelas
-function calculateInstallments(amount, installments) {
-    if (installments === 1) {
-        return {
-            installment_amount: amount,
-            total_amount: amount,
-            interest_amount: 0,
-            interest_rate: 0
-        };
+    if (!token) {
+        return res.status(401).json({ error: 'Token de acesso necessário' });
     }
 
-    const monthlyRate = 0.01; // 1% ao mês
-    const installmentAmount = amount * (monthlyRate * Math.pow(1 + monthlyRate, installments)) / 
-                            (Math.pow(1 + monthlyRate, installments) - 1);
-    
-    const totalAmount = installmentAmount * installments;
-    const interestAmount = totalAmount - amount;
-
-    return {
-        installment_amount: Math.round(installmentAmount * 100) / 100,
-        total_amount: Math.round(totalAmount * 100) / 100,
-        interest_amount: Math.round(interestAmount * 100) / 100,
-        interest_rate: monthlyRate * 100
-    };
-}
-
-// Gerar opções de pagamento
-router.post('/options', authenticateToken, [
-    body('order_id').isInt({ min: 1 }).withMessage('ID do pedido inválido')
-], async (req, res) => {
     try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const { order_id } = req.body;
-        const userId = req.user.id;
-
-        // Buscar pedido
-        const [orders] = await pool.execute(`
-            SELECT id, total_amount, status FROM orders 
-            WHERE id = ? AND user_id = ? AND status = 'pending_payment'
-        `, [order_id, userId]);
-
-        if (orders.length === 0) {
-            return res.status(404).json({ error: 'Pedido não encontrado ou não elegível para pagamento' });
-        }
-
-        const order = orders[0];
-        const amount = order.total_amount;
-
-        // Calcular opções de pagamento
-        const paymentOptions = {
-            cash: {
-                amount: amount,
-                installments: 1,
-                installment_amount: amount,
-                total_amount: amount,
-                interest_amount: 0,
-                interest_rate: 0
-            },
-            installments: []
-        };
-
-        // Calcular parcelas de 2 a 10x
-        for (let i = 2; i <= 10; i++) {
-            const installment = calculateInstallments(amount, i);
-            paymentOptions.installments.push({
-                installments: i,
-                ...installment
-            });
-        }
-
-        res.json({
-            order_id,
-            amount,
-            payment_options: paymentOptions
-        });
-
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'e2e-commerce-secret-key');
+        req.user = decoded;
+        next();
     } catch (error) {
-        console.error('Erro ao calcular opções de pagamento:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+        return res.status(403).json({ error: 'Token inválido' });
     }
-});
+};
 
-// Processar pagamento com cartão
-router.post('/card', authenticateToken, paymentValidation.concat(cardValidation), async (req, res) => {
+// POST /api/payments/quote - Obter cotação de parcelas
+router.post('/quote', (req, res) => {
     try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+        const { amount } = req.body;
+
+        if (!amount || amount <= 0) {
+            return res.status(400).json({ error: 'Valor inválido' });
         }
 
-        const {
-            order_id, payment_method, installments = 1,
-            card_number, cvv, expiry_month, expiry_year, cardholder_name
-        } = req.body;
-
-        const userId = req.user.id;
-
-        // Buscar pedido
-        const [orders] = await pool.execute(`
-            SELECT id, total_amount, status FROM orders 
-            WHERE id = ? AND user_id = ? AND status = 'pending_payment'
-        `, [order_id, userId]);
-
-        if (orders.length === 0) {
-            return res.status(404).json({ error: 'Pedido não encontrado ou não elegível para pagamento' });
-        }
-
-        const order = orders[0];
-
-        // Validar cartão
-        const maskedCard = card_number.replace(/(\d{4})\d{8}(\d{4})/, '$1****$2');
-        const cardData = MOCK_CARDS[card_number];
-
-        if (!cardData) {
-            return res.status(400).json({ 
-                error: 'Cartão não reconhecido',
-                details: 'Use um dos cartões de teste disponíveis'
-            });
-        }
-
-        // Verificar tipo de cartão
-        if (cardData.type !== payment_method.replace('_card', '')) {
-            return res.status(400).json({ 
-                error: 'Tipo de cartão não confere com o método de pagamento' 
-            });
-        }
-
-        // Verificar limite (simulado)
-        if (order.total_amount > 50000) {
-            return res.status(400).json({ 
-                error: 'Valor excede o limite máximo de R$ 50.000,00' 
-            });
-        }
-
-        // Simular processamento
-        const transactionId = `TXN-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+        const payment = new Payment('temp', 'temp', amount, 'credit_card');
         
-        let paymentStatus = 'pending';
-        let responseData = {};
-
-        if (cardData.status === 'approved') {
-            paymentStatus = 'approved';
-            responseData = {
-                transaction_id: transactionId,
-                status: 'approved',
-                amount: order.total_amount,
+        // Calcular parcelas de 1x a 10x
+        const quotes = [];
+        
+        for (let installments = 1; installments <= 10; installments++) {
+            const quote = payment.calculateInstallments(amount, installments);
+            quotes.push({
                 installments: installments,
-                masked_card: maskedCard
-            };
-        } else {
-            paymentStatus = 'declined';
-            responseData = {
-                transaction_id: transactionId,
-                status: 'declined',
-                reason: cardData.reason,
-                error_code: cardData.reason === 'insufficient_funds' ? 'INSUFFICIENT_FUNDS' : 'DO_NOT_HONOR'
-            };
-        }
-
-        // Salvar transação
-        await pool.execute(`
-            INSERT INTO payment_transactions (order_id, transaction_id, payment_method, amount, status, response_data)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `, [order_id, transactionId, payment_method, order.total_amount, paymentStatus, JSON.stringify(responseData)]);
-
-        if (paymentStatus === 'approved') {
-            // Atualizar status do pedido
-            await pool.execute(
-                'UPDATE orders SET status = ?, payment_status = ?, payment_method = ? WHERE id = ?',
-                ['paid', 'paid', payment_method, order_id]
-            );
-
-            // Registrar no histórico
-            await pool.execute(`
-                INSERT INTO order_status_history (order_id, status, changed_by)
-                VALUES (?, 'paid', ?)
-            `, [order_id, userId]);
+                installmentAmount: quote.installmentAmount,
+                totalWithInterest: quote.totalWithInterest,
+                totalInterest: quote.totalInterest,
+                interestRate: installments === 1 ? 0 : 1 // 1% a.m.
+            });
         }
 
         res.json({
-            message: paymentStatus === 'approved' ? 'Pagamento aprovado' : 'Pagamento recusado',
-            ...responseData
+            amount: amount,
+            quotes: quotes,
+            cashDiscount: 0, // Sem desconto à vista
+            minInstallmentAmount: 5.00 // Valor mínimo por parcela
         });
 
     } catch (error) {
-        console.error('Erro ao processar pagamento:', error);
+        console.error('Erro na cotação:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
 
-// Gerar PIX
-router.post('/pix', authenticateToken, [
-    body('order_id').isInt({ min: 1 }).withMessage('ID do pedido inválido')
-], async (req, res) => {
+// POST /api/payments/credit-card - Processar pagamento com cartão de crédito
+router.post('/credit-card', authenticateToken, (req, res) => {
     try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+        const { orderId, amount, pan, cvv, expiryMonth, expiryYear, installments } = req.body;
+
+        if (!orderId || !amount || !pan || !cvv || !expiryMonth || !expiryYear || !installments) {
+            return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
         }
 
-        const { order_id } = req.body;
-        const userId = req.user.id;
-
-        // Buscar pedido
-        const [orders] = await pool.execute(`
-            SELECT id, total_amount, status FROM orders 
-            WHERE id = ? AND user_id = ? AND status = 'pending_payment'
-        `, [order_id, userId]);
-
-        if (orders.length === 0) {
-            return res.status(404).json({ error: 'Pedido não encontrado ou não elegível para pagamento' });
-        }
-
-        const order = orders[0];
-
-        // Gerar dados do PIX
-        const txid = crypto.randomBytes(16).toString('hex').toUpperCase();
-        const pixKey = crypto.randomBytes(32).toString('base64');
+        // Validar dados do cartão
+        const payment = new Payment('temp', orderId, amount, 'credit_card', 'pending', installments);
+        const cardValidation = payment.validateCard(pan, cvv, expiryMonth, expiryYear, 'visa');
         
-        // Gerar QR Code
-        const qrCodeData = {
-            pixKey,
-            amount: order.total_amount,
-            txid,
-            description: `Pagamento pedido ${order_id}`
+        if (!cardValidation.isValid) {
+            return res.status(400).json({ 
+                error: 'Dados do cartão inválidos',
+                details: cardValidation.errors 
+            });
+        }
+
+        // Determinar bandeira
+        let brand = 'visa';
+        if (pan.startsWith('5')) {
+            brand = 'mastercard';
+        }
+
+        // Buscar dados mockados
+        const cardData = brand === 'visa' ? mockCardData.visa : mockCardData.mastercard;
+        const mockCard = cardData.find(card => card.pan === pan);
+
+        if (!mockCard) {
+            return res.status(400).json({ 
+                error: 'Cartão não encontrado',
+                errorCode: 'invalid_pan'
+            });
+        }
+
+        // Verificar CVV
+        if (mockCard.cvv !== cvv) {
+            return res.status(400).json({ 
+                error: 'CVV inválido',
+                errorCode: 'invalid_cvv'
+            });
+        }
+
+        // Verificar expiração
+        if (mockCard.expiryMonth !== parseInt(expiryMonth) || mockCard.expiryYear !== parseInt(expiryYear)) {
+            return res.status(400).json({ 
+                error: 'Data de expiração inválida',
+                errorCode: 'expired_card'
+            });
+        }
+
+        // Criar pagamento
+        const paymentId = 'pay_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        const newPayment = new Payment(paymentId, orderId, amount, 'credit_card', 'pending', installments);
+        
+        // Calcular parcelas
+        const installmentDetails = newPayment.calculateInstallments(amount, installments);
+        newPayment.installmentDetails = installmentDetails.details;
+
+        // Armazenar dados do cartão (mascarados)
+        newPayment.cardData = {
+            pan: pan,
+            brand: brand,
+            last4: pan.slice(-4)
         };
 
-        const qrCodeString = JSON.stringify(qrCodeData);
-        const qrCodeImage = await QRCode.toDataURL(qrCodeString);
-
-        // Salvar transação PIX
-        await pool.execute(`
-            INSERT INTO payment_transactions (order_id, transaction_id, payment_method, amount, status, response_data)
-            VALUES (?, ?, 'pix', ?, 'pending', ?)
-        `, [order_id, txid, order.total_amount, JSON.stringify({
-            pix_key: pixKey,
-            qr_code: qrCodeImage,
-            expires_at: new Date(Date.now() + 30 * 60 * 1000) // 30 minutos
-        })]);
-
-        res.json({
-            txid,
-            pix_key: pixKey,
-            qr_code: qrCodeImage,
-            amount: order.total_amount,
-            expires_in: 30 * 60, // 30 minutos em segundos
-            message: 'QR Code gerado com sucesso. Pague em até 30 minutos.'
-        });
+        // Processar pagamento
+        if (mockCard.result === 'approved') {
+            newPayment.updateStatus('paid', paymentId);
+            payments.push(newPayment);
+            
+            res.json({
+                success: true,
+                paymentId: paymentId,
+                status: 'paid',
+                message: 'Pagamento aprovado',
+                installmentDetails: installmentDetails
+            });
+        } else {
+            newPayment.updateStatus('failed');
+            payments.push(newPayment);
+            
+            res.status(400).json({
+                success: false,
+                paymentId: paymentId,
+                status: 'failed',
+                error: 'Pagamento recusado',
+                errorCode: mockCard.errorCode,
+                message: getErrorMessage(mockCard.errorCode)
+            });
+        }
 
     } catch (error) {
-        console.error('Erro ao gerar PIX:', error);
+        console.error('Erro no pagamento:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
 
-// Verificar status do PIX
-router.get('/pix/:txid/status', authenticateToken, async (req, res) => {
+// POST /api/payments/debit-card - Processar pagamento com cartão de débito
+router.post('/debit-card', authenticateToken, (req, res) => {
+    try {
+        const { orderId, amount, pan, cvv, expiryMonth, expiryYear } = req.body;
+
+        if (!orderId || !amount || !pan || !cvv || !expiryMonth || !expiryYear) {
+            return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+        }
+
+        // Validar dados do cartão
+        const payment = new Payment('temp', orderId, amount, 'debit_card', 'pending', 1);
+        const cardValidation = payment.validateCard(pan, cvv, expiryMonth, expiryYear, 'visa');
+        
+        if (!cardValidation.isValid) {
+            return res.status(400).json({ 
+                error: 'Dados do cartão inválidos',
+                details: cardValidation.errors 
+            });
+        }
+
+        // Determinar bandeira
+        let brand = 'visa';
+        if (pan.startsWith('5')) {
+            brand = 'mastercard';
+        }
+
+        // Buscar dados mockados
+        const cardData = brand === 'visa' ? mockCardData.visaDebit : mockCardData.mastercardDebit;
+        const mockCard = cardData.find(card => card.pan === pan);
+
+        if (!mockCard) {
+            return res.status(400).json({ 
+                error: 'Cartão não encontrado',
+                errorCode: 'invalid_pan'
+            });
+        }
+
+        // Verificar CVV
+        if (mockCard.cvv !== cvv) {
+            return res.status(400).json({ 
+                error: 'CVV inválido',
+                errorCode: 'invalid_cvv'
+            });
+        }
+
+        // Verificar expiração
+        if (mockCard.expiryMonth !== parseInt(expiryMonth) || mockCard.expiryYear !== parseInt(expiryYear)) {
+            return res.status(400).json({ 
+                error: 'Data de expiração inválida',
+                errorCode: 'expired_card'
+            });
+        }
+
+        // Criar pagamento
+        const paymentId = 'pay_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        const newPayment = new Payment(paymentId, orderId, amount, 'debit_card', 'pending', 1);
+        
+        // Armazenar dados do cartão (mascarados)
+        newPayment.cardData = {
+            pan: pan,
+            brand: brand,
+            last4: pan.slice(-4)
+        };
+
+        // Processar pagamento
+        if (mockCard.result === 'approved') {
+            newPayment.updateStatus('paid', paymentId);
+            payments.push(newPayment);
+            
+            res.json({
+                success: true,
+                paymentId: paymentId,
+                status: 'paid',
+                message: 'Pagamento aprovado'
+            });
+        } else {
+            newPayment.updateStatus('failed');
+            payments.push(newPayment);
+            
+            res.status(400).json({
+                success: false,
+                paymentId: paymentId,
+                status: 'failed',
+                error: 'Pagamento recusado',
+                errorCode: mockCard.errorCode,
+                message: getErrorMessage(mockCard.errorCode)
+            });
+        }
+
+    } catch (error) {
+        console.error('Erro no pagamento:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// POST /api/payments/pix - Processar pagamento com PIX
+router.post('/pix', authenticateToken, (req, res) => {
+    try {
+        const { orderId, amount, payerCpf, payerCnpj } = req.body;
+
+        if (!orderId || !amount || (!payerCpf && !payerCnpj)) {
+            return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+        }
+
+        // Validar PIX
+        const payment = new Payment('temp', orderId, amount, 'pix', 'pending', 1);
+        const pixValidation = payment.validatePix(payerCpf, payerCnpj);
+        
+        if (!pixValidation.isValid) {
+            return res.status(400).json({ 
+                error: 'Dados PIX inválidos',
+                details: pixValidation.errors 
+            });
+        }
+
+        // Criar pagamento
+        const paymentId = 'pay_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        const newPayment = new Payment(paymentId, orderId, amount, 'pix', 'pending', 1);
+        
+        // Gerar dados PIX
+        const pixData = newPayment.generatePixData();
+        newPayment.pixData = pixData;
+        
+        payments.push(newPayment);
+
+        res.json({
+            success: true,
+            paymentId: paymentId,
+            status: 'pending',
+            message: 'PIX gerado com sucesso',
+            pixData: {
+                txid: pixData.txid,
+                pixKey: pixData.pixKey,
+                qrCode: pixData.qrCode,
+                expiresAt: pixData.expiresAt
+            }
+        });
+
+    } catch (error) {
+        console.error('Erro no PIX:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// GET /api/payments/pix/:txid/status - Verificar status do PIX
+router.get('/pix/:txid/status', authenticateToken, (req, res) => {
     try {
         const { txid } = req.params;
-        const userId = req.user.id;
+        const payment = payments.find(p => p.pixData && p.pixData.txid === txid);
 
-        // Buscar transação
-        const [transactions] = await pool.execute(`
-            SELECT pt.*, o.user_id 
-            FROM payment_transactions pt
-            JOIN orders o ON pt.order_id = o.id
-            WHERE pt.transaction_id = ? AND o.user_id = ?
-        `, [txid, userId]);
-
-        if (transactions.length === 0) {
-            return res.status(404).json({ error: 'Transação não encontrada' });
+        if (!payment) {
+            return res.status(404).json({ error: 'PIX não encontrado' });
         }
 
-        const transaction = transactions[0];
-        const responseData = JSON.parse(transaction.response_data || '{}');
-
-        // Simular verificação de pagamento (em produção, consultaria o gateway)
-        let status = transaction.status;
+        // Simular verificação de status
         const now = new Date();
-        const expiresAt = new Date(responseData.expires_at);
-
-        if (status === 'pending' && now > expiresAt) {
-            status = 'expired';
-            await pool.execute(
-                'UPDATE payment_transactions SET status = ? WHERE id = ?',
-                ['expired', transaction.id]
-            );
-        } else if (status === 'pending') {
-            // Simular aprovação aleatória após alguns segundos
-            const timeSinceCreation = now.getTime() - new Date(transaction.created_at).getTime();
-            if (timeSinceCreation > 10000) { // 10 segundos
-                status = 'approved';
-                await pool.execute(
-                    'UPDATE payment_transactions SET status = ? WHERE id = ?',
-                    ['approved', transaction.id]
-                );
-
-                // Atualizar status do pedido
-                await pool.execute(
-                    'UPDATE orders SET status = ?, payment_status = ?, payment_method = ? WHERE id = ?',
-                    ['paid', 'paid', 'pix', transaction.order_id]
-                );
-
-                // Registrar no histórico
-                await pool.execute(`
-                    INSERT INTO order_status_history (order_id, status, changed_by)
-                    VALUES (?, 'paid', ?)
-                `, [transaction.order_id, userId]);
-            }
+        if (payment.pixData.expiresAt < now && payment.status === 'pending') {
+            payment.updateStatus('expired');
         }
 
         res.json({
-            txid,
-            status,
-            amount: transaction.amount,
-            created_at: transaction.created_at,
-            expires_at: responseData.expires_at
+            txid: txid,
+            status: payment.status,
+            statusLabel: payment.getStatusLabel(),
+            expiresAt: payment.pixData.expiresAt,
+            isExpired: payment.pixData.expiresAt < now
         });
 
     } catch (error) {
-        console.error('Erro ao verificar status PIX:', error);
+        console.error('Erro na verificação PIX:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
 
-// Listar transações do usuário
-router.get('/transactions', authenticateToken, async (req, res) => {
+// GET /api/payments/orders/:orderId - Obter pagamentos de um pedido
+router.get('/orders/:orderId', authenticateToken, (req, res) => {
     try {
-        const userId = req.user.id;
-        const page = parseInt(req.query.page) || 1;
-        const pageSize = parseInt(req.query.pageSize) || 10;
-        const offset = (page - 1) * pageSize;
-
-        const [transactions] = await pool.execute(`
-            SELECT pt.*, o.order_number, o.total_amount
-            FROM payment_transactions pt
-            JOIN orders o ON pt.order_id = o.id
-            WHERE o.user_id = ?
-            ORDER BY pt.created_at DESC
-            LIMIT ? OFFSET ?
-        `, [userId, pageSize, offset]);
-
-        // Contar total
-        const [countResult] = await pool.execute(`
-            SELECT COUNT(*) as total 
-            FROM payment_transactions pt
-            JOIN orders o ON pt.order_id = o.id
-            WHERE o.user_id = ?
-        `, [userId]);
-
-        const total = countResult[0].total;
+        const { orderId } = req.params;
+        const orderPayments = payments.filter(p => p.orderId === orderId);
 
         res.json({
-            transactions,
-            pagination: {
-                page,
-                pageSize,
-                total,
-                totalPages: Math.ceil(total / pageSize)
-            }
+            orderId: orderId,
+            payments: orderPayments.map(p => p.toJSON())
         });
 
     } catch (error) {
-        console.error('Erro ao listar transações:', error);
+        console.error('Erro ao buscar pagamentos:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
+
+// Função auxiliar para obter mensagens de erro
+function getErrorMessage(errorCode) {
+    const errorMessages = {
+        'insufficient_funds': 'Saldo insuficiente',
+        'do_not_honor': 'Cartão recusado pela operadora',
+        'invalid_cvv': 'CVV inválido',
+        'expired_card': 'Cartão expirado',
+        'limit_exceeded': 'Limite excedido',
+        'invalid_pan': 'Número do cartão inválido'
+    };
+    return errorMessages[errorCode] || 'Erro no processamento do pagamento';
+}
 
 module.exports = router;

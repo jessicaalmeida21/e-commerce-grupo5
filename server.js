@@ -51,8 +51,8 @@ const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
 const addressRoutes = require('./routes/addresses');
 const cartRoutes = require('./routes/cart');
-const orderRoutes = require('./routes/orders');
 const paymentRoutes = require('./routes/payments');
+const logisticsRoutes = require('./routes/logistics');
 const supplierRoutes = require('./routes/suppliers');
 
 // Usar rotas
@@ -62,6 +62,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/logistics', logisticsRoutes);
 app.use('/api/suppliers', supplierRoutes);
 
 // Servir arquivos estáticos
@@ -91,6 +92,14 @@ app.get('/dashboard', (req, res) => {
 
 app.get('/checkout', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'checkout.html'));
+});
+
+app.get('/pagamento', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'pagamento.html'));
+});
+
+app.get('/logistica', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'logistica.html'));
 });
 
 // Middleware de erro

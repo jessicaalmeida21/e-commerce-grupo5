@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamento - E2E E-commerce</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="payment-main">
+        <div class="container">
+            <div class="payment-header">
+                <h1><i class="fas fa-credit-card"></i> Finalizar Pagamento</h1>
+                <p>Complete seu pedido de forma segura</p>
+            </div>
+
+            <div class="payment-content">
+                <div class="payment-form-container">
+                    <!-- Resumo do Pedido -->
+                    <div class="order-summary">
+                        <h3><i class="fas fa-shopping-bag"></i> Resumo do Pedido</h3>
+                        <div id="order-summary-content">
+                            <!-- Será preenchido via JavaScript -->
+                        </div>
+                        <div class="summary-total">
+                            <div class="total-row">
+                                <span>Total:</span>
+                                <span id="order-total">R$ 0,00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seleção de Método de Pagamento -->
+                    <div class="payment-methods">
+                        <h3><i class="fas fa-credit-card"></i> Método de Pagamento</h3>
+                        
+                        <div class="payment-options">
+                            <div class="payment-option">
+                                <input type="radio" id="credit-card" name="payment-method" value="credit_card" checked>
+                                <label for="credit-card">
+                                    <i class="fas fa-credit-card"></i>
+                                    <span>Cartão de Crédito</span>
+                                </label>
+                            </div>
+                            
+                            <div class="payment-option">
+                                <input type="radio" id="debit-card" name="payment-method" value="debit_card">
+                                <label for="debit-card">
+                                    <i class="fas fa-credit-card"></i>
+                                    <span>Cartão de Débito</span>
+                                </label>
+                            </div>
+                            
+                            <div class="payment-option">
+                                <input type="radio" id="pix" name="payment-method" value="pix">
+                                <label for="pix">
+                                    <i class="fab fa-pix"></i>
+                                    <span>PIX</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulário de Cartão -->
+                    <div id="card-form" class="payment-form">
+                        <h4>Dados do Cartão</h4>
+                        
+                        <div class="form-group">
+                            <label for="card-number">Número do Cartão</label>
+                            <input type="text" id="card-number" placeholder="0000 0000 0000 0000" maxlength="19">
+                            <div class="card-brands">
+                                <i class="fab fa-cc-visa"></i>
+                                <i class="fab fa-cc-mastercard"></i>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="card-cvv">CVV</label>
+                                <input type="text" id="card-cvv" placeholder="123" maxlength="4">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="card-expiry">Validade</label>
+                                <input type="text" id="card-expiry" placeholder="MM/AA" maxlength="5">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="card-holder">Nome no Cartão</label>
+                            <input type="text" id="card-holder" placeholder="Nome como está no cartão">
+                        </div>
+
+                        <!-- Parcelas (apenas para crédito) -->
+                        <div id="installments-section" class="form-group">
+                            <label for="installments">Parcelas</label>
+                            <select id="installments">
+                                <option value="1">1x de R$ 0,00 (à vista)</option>
+                            </select>
+                            <div id="installment-details" class="installment-details">
+                                <!-- Detalhes das parcelas serão preenchidos via JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulário PIX -->
+                    <div id="pix-form" class="payment-form" style="display: none;">
+                        <h4>Dados para PIX</h4>
+                        
+                        <div class="form-group">
+                            <label for="pix-cpf">CPF</label>
+                            <input type="text" id="pix-cpf" placeholder="000.000.000-00" maxlength="14">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="pix-cnpj">CNPJ (opcional)</label>
+                            <input type="text" id="pix-cnpj" placeholder="00.000.000/0000-00" maxlength="18">
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <div class="payment-actions">
+                        <button type="button" class="btn-secondary" onclick="history.back()">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </button>
+                        <button type="button" class="btn-primary" id="process-payment">
+                            <i class="fas fa-lock"></i> Processar Pagamento
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Informações de Segurança -->
+                <div class="security-info">
+                    <h4><i class="fas fa-shield-alt"></i> Segurança</h4>
+                    <ul>
+                        <li><i class="fas fa-check"></i> Dados criptografados</li>
+                        <li><i class="fas fa-check"></i> Não armazenamos dados do cartão</li>
+                        <li><i class="fas fa-check"></i> Transação segura SSL</li>
+                        <li><i class="fas fa-check"></i> Proteção contra fraudes</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação PIX -->
+    <div id="pix-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fab fa-pix"></i> Pagamento PIX</h3>
+                <button class="close-btn" onclick="closePixModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="pix-payment">
+                    <div class="pix-qr">
+                        <div id="pix-qr-code">
+                            <!-- QR Code será gerado aqui -->
+                        </div>
+                        <p>Escaneie o QR Code com seu app do banco</p>
+                    </div>
+                    
+                    <div class="pix-details">
+                        <div class="pix-info">
+                            <label>Chave PIX:</label>
+                            <div class="pix-key">
+                                <span id="pix-key-display">pix@e2etreinamentos.com.br</span>
+                                <button onclick="copyPixKey()"><i class="fas fa-copy"></i></button>
+                            </div>
+                        </div>
+                        
+                        <div class="pix-info">
+                            <label>Valor:</label>
+                            <span id="pix-amount">R$ 0,00</span>
+                        </div>
+                        
+                        <div class="pix-info">
+                            <label>Expira em:</label>
+                            <span id="pix-expiry">30 minutos</span>
+                        </div>
+                    </div>
+                    
+                    <div class="pix-status">
+                        <div id="pix-status-indicator" class="status-pending">
+                            <i class="fas fa-clock"></i>
+                            <span>Aguardando pagamento...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Sucesso -->
+    <div id="success-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-check-circle"></i> Pagamento Aprovado</h3>
+            </div>
+            <div class="modal-body">
+                <div class="success-content">
+                    <i class="fas fa-check-circle success-icon"></i>
+                    <h4>Pagamento processado com sucesso!</h4>
+                    <p>Seu pedido foi confirmado e está sendo processado.</p>
+                    <div class="success-details">
+                        <div class="detail-row">
+                            <span>ID do Pagamento:</span>
+                            <span id="payment-id">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Valor:</span>
+                            <span id="payment-amount">R$ 0,00</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Método:</span>
+                            <span id="payment-method">-</span>
+                        </div>
+                    </div>
+                    <button class="btn-primary" onclick="redirectToOrders()">
+                        <i class="fas fa-list"></i> Ver Meus Pedidos
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="auth.js"></script>
+    <script src="payment.js"></script>
+</body>
+</html>

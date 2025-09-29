@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logística - E2E E-commerce</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="logistics-main">
+        <div class="container">
+            <div class="logistics-header">
+                <h1><i class="fas fa-truck"></i> Acompanhamento Logístico</h1>
+                <p>Monitore o status de entrega dos seus pedidos</p>
+            </div>
+
+            <!-- Filtros -->
+            <div class="logistics-filters">
+                <div class="filter-group">
+                    <label for="status-filter">Status:</label>
+                    <select id="status-filter">
+                        <option value="">Todos</option>
+                        <option value="awaiting_shipment">Aguardando Envio</option>
+                        <option value="in_transit">Em Transporte</option>
+                        <option value="delivered">Entregue</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="search-order">Buscar Pedido:</label>
+                    <input type="text" id="search-order" placeholder="Número do pedido">
+                </div>
+                
+                <button class="btn-primary" onclick="applyFilters()">
+                    <i class="fas fa-search"></i> Filtrar
+                </button>
+            </div>
+
+            <!-- Lista de Pedidos -->
+            <div class="logistics-list" id="logistics-list">
+                <!-- Será preenchido via JavaScript -->
+            </div>
+
+            <!-- Paginação -->
+            <div class="pagination" id="pagination">
+                <!-- Será preenchido via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Detalhes -->
+    <div id="logistics-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-truck"></i> Detalhes da Entrega</h3>
+                <button class="close-btn" onclick="closeLogisticsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="logistics-details">
+                    <!-- Informações do Pedido -->
+                    <div class="order-info">
+                        <h4>Informações do Pedido</h4>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <label>Número do Pedido:</label>
+                                <span id="modal-order-id">-</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Data do Pedido:</label>
+                                <span id="modal-order-date">-</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Valor Total:</label>
+                                <span id="modal-order-total">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status Atual -->
+                    <div class="current-status">
+                        <h4>Status Atual</h4>
+                        <div class="status-display">
+                            <div class="status-icon" id="modal-status-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="status-info">
+                                <span class="status-label" id="modal-status-label">Aguardando Envio</span>
+                                <span class="status-date" id="modal-status-date">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Código de Rastreamento -->
+                    <div class="tracking-info" id="tracking-section" style="display: none;">
+                        <h4>Código de Rastreamento</h4>
+                        <div class="tracking-code">
+                            <span id="modal-tracking-code">-</span>
+                            <button onclick="copyTrackingCode()"><i class="fas fa-copy"></i></button>
+                        </div>
+                        <div class="carrier-info">
+                            <label>Transportadora:</label>
+                            <span id="modal-carrier">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Histórico de Movimentações -->
+                    <div class="movement-history">
+                        <h4>Histórico de Movimentações</h4>
+                        <div class="timeline" id="modal-timeline">
+                            <!-- Será preenchido via JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Atualização de Status (Admin) -->
+    <div id="update-status-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Atualizar Status</h3>
+                <button class="close-btn" onclick="closeUpdateStatusModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="update-status-form">
+                    <div class="form-group">
+                        <label for="new-status">Novo Status:</label>
+                        <select id="new-status" required>
+                            <option value="">Selecione o status</option>
+                            <option value="in_transit">Em Transporte</option>
+                            <option value="delivered">Entregue</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="status-reason">Motivo (opcional):</label>
+                        <textarea id="status-reason" placeholder="Descreva o motivo da atualização"></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="closeUpdateStatusModal()">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i> Atualizar Status
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Correção de Status (Admin) -->
+    <div id="correct-status-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-exclamation-triangle"></i> Corrigir Status</h3>
+                <button class="close-btn" onclick="closeCorrectStatusModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="correct-status-form">
+                    <div class="warning-text">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Esta ação irá alterar o status logístico manualmente. Use apenas em casos de erro.</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="correct-status">Status Correto:</label>
+                        <select id="correct-status" required>
+                            <option value="">Selecione o status</option>
+                            <option value="awaiting_shipment">Aguardando Envio</option>
+                            <option value="in_transit">Em Transporte</option>
+                            <option value="delivered">Entregue</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="correct-reason">Motivo da Correção:</label>
+                        <textarea id="correct-reason" placeholder="Descreva detalhadamente o motivo da correção" required></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="closeCorrectStatusModal()">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn-danger">
+                            <i class="fas fa-exclamation-triangle"></i> Corrigir Status
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="auth.js"></script>
+    <script src="logistics.js"></script>
+</body>
+</html>

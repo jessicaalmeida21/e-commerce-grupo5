@@ -354,10 +354,11 @@ class CheckoutManager {
                     }
                 });
 
-                // Redirecionar para página de pedidos
+                // Salvar dados do pedido e redirecionar para pagamento
+                sessionStorage.setItem('currentOrder', JSON.stringify(data.order));
                 setTimeout(() => {
-                    window.location.href = 'pedidos.html';
-                }, 2000);
+                    window.location.href = 'pagamento.html';
+                }, 1000);
             } else {
                 const error = await response.json();
                 this.showNotification(error.error || 'Erro ao criar pedido', 'error');
