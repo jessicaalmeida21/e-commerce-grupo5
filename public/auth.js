@@ -46,6 +46,25 @@ const registerForm = document.getElementById('register-form');
             remember: formData.get('remember') === 'on'
         };
 
+        // Validações básicas
+        if (!loginData.email || !loginData.password) {
+            console.log('Campos vazios:', loginData);
+            this.showNotification('Por favor, preencha todos os campos.', 'error');
+            return;
+        }
+
+        if (!this.isValidEmail(loginData.email)) {
+            console.log('Email inválido:', loginData.email);
+            this.showNotification('Por favor, digite um email válido.', 'error');
+            return;
+        }
+
+        if (loginData.password.length < 6) {
+            console.log('Senha muito curta:', loginData.password.length);
+            this.showNotification('A senha deve ter pelo menos 6 caracteres.', 'error');
+            return;
+        }
+
         // Modo demo - verificar se há usuário cadastrado
         try {
             const savedUser = localStorage.getItem('demo_user');
@@ -57,9 +76,9 @@ const registerForm = document.getElementById('register-form');
 
             const userData = JSON.parse(savedUser);
             
-            // Verificar se o email corresponde (simulação)
+            // Verificar se o email corresponde
             if (userData.email !== loginData.email) {
-                this.showNotification('Email não encontrado. Verifique os dados.', 'error');
+                this.showNotification('Email não encontrado. Verifique o email digitado.', 'error');
                 return;
             }
 
@@ -70,7 +89,7 @@ const registerForm = document.getElementById('register-form');
             this.currentUser = userData;
             localStorage.setItem('demo_logged_in', 'true');
             
-            this.showNotification(`Bem-vindo, ${userData.firstName}!`, 'success');
+            this.showNotification(`Bem-vindo de volta, ${userData.firstName}!`, 'success');
             
             setTimeout(() => {
                 window.location.href = 'index.html';
@@ -78,7 +97,7 @@ const registerForm = document.getElementById('register-form');
             
         } catch (error) {
             console.error('Login error:', error);
-            this.showNotification('Erro ao fazer login. Tente novamente.', 'error');
+            this.showNotification('Erro interno. Tente novamente.', 'error');
         }
     }
 
@@ -187,11 +206,15 @@ const registerForm = document.getElementById('register-form');
     }
 
     isPasswordStrong(password) {
-        return password.length >= 10 && 
+        return password.length >= 8 && 
                /[a-z]/.test(password) && 
                /[A-Z]/.test(password) && 
-               /[0-9]/.test(password) && 
-               /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+               /[0-9]/.test(password);
+    }
+
+    isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
     }
 
     checkPasswordMatch() {
@@ -256,19 +279,21 @@ const registerForm = document.getElementById('register-form');
     }
 
     showNotification(message, type = 'info') {
+        console.log(`Notification: ${type} - ${message}`);
+        
         // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.innerHTML = `
-        <div class="notification-content">
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <div class="notification-content">
                 <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
-            <span>${message}</span>
-        </div>
-    `;
-    
+                <span>${message}</span>
+            </div>
+        `;
+        
         // Add to page
-    document.body.appendChild(notification);
-    
+        document.body.appendChild(notification);
+        
         // Show notification
         setTimeout(() => {
             notification.classList.add('show');
