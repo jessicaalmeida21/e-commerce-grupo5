@@ -124,7 +124,7 @@ router.post('/', authenticateToken, async (req, res) => {
             });
         }
 
-        // Criar pedido
+            // Criar pedido
         const orderId = orders.length + 1;
         const order = new Order(
             orderId,
@@ -147,8 +147,8 @@ router.post('/', authenticateToken, async (req, res) => {
         // Salvar pedido
         orders.push(order);
 
-        res.status(201).json({
-            message: 'Pedido criado com sucesso',
+            res.status(201).json({
+                message: 'Pedido criado com sucesso',
             order: order.toJSON()
         });
 
@@ -256,7 +256,7 @@ router.post('/:id/return', authenticateToken, (req, res) => {
             order: order.toJSON()
         });
 
-    } catch (error) {
+        } catch (error) {
         console.error('Erro ao solicitar devolução:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
     }

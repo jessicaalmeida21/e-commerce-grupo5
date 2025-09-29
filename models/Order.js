@@ -68,8 +68,8 @@ class Order {
             throw new Error(`Transição de status inválida: ${this.status} → ${newStatus}`);
         }
 
-        this.status = newStatus;
-        this.updatedAt = new Date();
+            this.status = newStatus;
+            this.updatedAt = new Date();
 
         // Definir data de entrega quando status for 'delivered'
         if (newStatus === 'delivered') {
