@@ -8,6 +8,7 @@ class AuthSystem {
     init() {
         this.loadUserFromStorage();
         this.setupEventListeners();
+        this.fillLoginFieldsFromUrl();
     }
 
     setupEventListeners() {
@@ -90,8 +91,16 @@ const registerForm = document.getElementById('register-form');
         this.currentUser = userData;
         localStorage.setItem('demo_logged_in', 'true');
         
-        alert(`Bem-vindo de volta, ${userData.firstName}!`);
-        window.location.href = 'index.html';
+        alert(`Bem-vindo, ${userData.firstName}! Redirecionando para seu dashboard...`);
+        
+        // Redirecionar para dashboard baseado no tipo de conta
+        if (userData.role === 'client') {
+            window.location.href = 'dashboard.html';
+        } else if (userData.role === 'supplier') {
+            window.location.href = 'dashboard.html';
+        } else {
+            window.location.href = 'dashboard.html';
+        }
     }
 
     async handleRegister(e) {
@@ -108,15 +117,56 @@ const registerForm = document.getElementById('register-form');
             role: formData.get('role')
         };
 
+        // Validar todos os campos obrigatórios
+        if (!registerData.firstName || !registerData.firstName.trim()) {
+            alert('Por favor, preencha o nome.');
+            return;
+        }
+
+        if (!registerData.lastName || !registerData.lastName.trim()) {
+            alert('Por favor, preencha o sobrenome.');
+            return;
+        }
+
+        if (!registerData.email || !registerData.email.trim()) {
+            alert('Por favor, preencha o email.');
+            return;
+        }
+
+        if (!this.isValidEmail(registerData.email)) {
+            alert('Por favor, digite um email válido.');
+            return;
+        }
+
+        if (!registerData.phone || !registerData.phone.trim()) {
+            alert('Por favor, preencha o telefone.');
+            return;
+        }
+
+        if (!registerData.password || !registerData.password.trim()) {
+            alert('Por favor, preencha a senha.');
+            return;
+        }
+
+        if (!registerData.confirmPassword || !registerData.confirmPassword.trim()) {
+            alert('Por favor, confirme a senha.');
+            return;
+        }
+
+        if (!registerData.role || registerData.role === '') {
+            alert('Por favor, selecione o tipo de conta.');
+            return;
+        }
+
         // Validate password match
         if (registerData.password !== registerData.confirmPassword) {
-            this.showNotification('As senhas não coincidem', 'error');
+            alert('As senhas não coincidem');
             return;
         }
 
         // Validate password strength
         if (!this.isPasswordStrong(registerData.password)) {
-            this.showNotification('A senha deve ter pelo menos 8 caracteres, incluindo letras e números', 'error');
+            alert('A senha deve ter pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas e números');
             return;
         }
 
@@ -137,10 +187,12 @@ const registerForm = document.getElementById('register-form');
             };
 
             localStorage.setItem('demo_user', JSON.stringify(userData));
-            localStorage.setItem('demo_logged_in', 'true');
 
-            alert('Conta criada com sucesso! Login automático realizado...');
-            window.location.href = 'index.html';
+            alert('Conta criada com sucesso! Redirecionando para login...');
+            
+            // Redirecionar para login com dados preenchidos
+            const loginUrl = `login.html?email=${encodeURIComponent(registerData.email)}&password=${encodeURIComponent(registerData.password)}`;
+            window.location.href = loginUrl;
             
         } catch (error) {
             console.error('Register error:', error);
@@ -218,6 +270,26 @@ const registerForm = document.getElementById('register-form');
             authLinks.style.display = 'none';
             userMenu.style.display = 'block';
             userName.textContent = `${this.currentUser.firstName} ${this.currentUser.lastName}`;
+        }
+    }
+
+    fillLoginFieldsFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const email = urlParams.get('email');
+        const password = urlParams.get('password');
+
+        if (email) {
+            const emailInput = document.getElementById('email');
+            if (emailInput) {
+                emailInput.value = email;
+            }
+        }
+
+        if (password) {
+            const passwordInput = document.getElementById('password');
+            if (passwordInput) {
+                passwordInput.value = password;
+            }
         }
     }
 

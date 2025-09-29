@@ -12,14 +12,29 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeDashboard() {
-    const user = getCurrentUser();
-    if (!user) return;
+    // Verificar se está logado em modo demo
+    const isLoggedIn = localStorage.getItem('demo_logged_in');
+    const demoUser = localStorage.getItem('demo_user');
+    
+    let user = null;
+    if (isLoggedIn === 'true' && demoUser) {
+        user = JSON.parse(demoUser);
+    }
+
+    if (!user) {
+        alert('Você precisa estar logado para acessar o dashboard.');
+        window.location.href = 'login.html';
+        return;
+    }
 
     // Atualizar nome do usuário
     const userName = document.getElementById('user-name');
     if (userName) {
-        userName.textContent = user.name;
+        userName.textContent = `${user.firstName} ${user.lastName}`;
     }
+
+    // Atualizar informações do perfil
+    updateProfileInfo(user);
 
     // Mostrar/ocultar tabs baseado no role
     const productsTab = document.getElementById('products-tab');
@@ -650,3 +665,33 @@ dashboardStyles.textContent = `
     }
 `;
 document.head.appendChild(dashboardStyles);
+
+function updateProfileInfo(user) {
+    // Atualizar informações na aba de perfil
+    const profileName = document.getElementById('profile-name');
+    const profileEmail = document.getElementById('profile-email');
+    const profilePhone = document.getElementById('profile-phone');
+    const profileRole = document.getElementById('profile-role');
+
+    if (profileName) profileName.value = `${user.firstName} ${user.lastName}`;
+    if (profileEmail) profileEmail.value = user.email;
+    if (profilePhone) profilePhone.value = user.phone || '';
+    if (profileRole) profileRole.value = user.role;
+
+    // Atualizar título do dashboard baseado no tipo de usuário
+    const dashboardTitle = document.querySelector('.dashboard-header h1');
+    if (dashboardTitle) {
+        if (user.role === 'client') {
+            dashboardTitle.textContent = 'Meu Dashboard - Cliente';
+        } else if (user.role === 'supplier') {
+            dashboardTitle.textContent = 'Dashboard do Fornecedor';
+        } else {
+            dashboardTitle.textContent = 'Dashboard';
+        }
+    }
+
+    const dashboardSubtitle = document.querySelector('.dashboard-header p');
+    if (dashboardSubtitle) {
+        dashboardSubtitle.textContent = `Bem-vindo, ${user.firstName}! Gerencie sua conta e atividades.`;
+    }
+}
