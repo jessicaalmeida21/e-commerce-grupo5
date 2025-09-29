@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupEventListeners();
     updateCartUI();
+    checkAuthStatus();
 });
 
 // Inicializar aplicação
@@ -613,3 +614,121 @@ notificationStyles.textContent = `
     }
 `;
 document.head.appendChild(notificationStyles);
+
+// Funções de Autenticação
+function checkAuthStatus() {
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    
+    const authLinks = document.getElementById('auth-links');
+    const userMenu = document.getElementById('user-menu');
+    const userName = document.getElementById('user-name');
+    const dashboardLink = document.getElementById('dashboard-link');
+    
+    if (token && user) {
+        // Usuário logado
+        if (authLinks) authLinks.style.display = 'none';
+        if (userMenu) userMenu.style.display = 'flex';
+        if (userName) userName.textContent = user.name;
+        
+        // Configurar link do dashboard baseado no role
+        if (dashboardLink) {
+            switch (user.role) {
+                case 'admin':
+                    dashboardLink.href = 'dashboard.html?tab=admin';
+                    dashboardLink.innerHTML = '<i class="fas fa-crown"></i> Admin Dashboard';
+                    break;
+                case 'supplier':
+                    dashboardLink.href = 'dashboard.html?tab=supplier';
+                    dashboardLink.innerHTML = '<i class="fas fa-store"></i> Fornecedor';
+                    break;
+                case 'operator':
+                    dashboardLink.href = 'dashboard.html?tab=operator';
+                    dashboardLink.innerHTML = '<i class="fas fa-cogs"></i> Operador';
+                    break;
+                case 'client':
+                default:
+                    dashboardLink.href = 'dashboard.html?tab=client';
+                    dashboardLink.innerHTML = '<i class="fas fa-user"></i> Minha Conta';
+                    break;
+            }
+        }
+        
+        // Configurar dropdown do usuário
+        setupUserDropdown();
+    } else {
+        // Usuário não logado
+        if (authLinks) authLinks.style.display = 'flex';
+        if (userMenu) userMenu.style.display = 'none';
+    }
+}
+
+function setupUserDropdown() {
+    const userToggle = document.getElementById('user-toggle');
+    const dropdownMenu = document.getElementById('dropdown-menu');
+    
+    if (userToggle && dropdownMenu) {
+        userToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdownMenu.classList.toggle('show');
+        });
+        
+        // Fechar dropdown ao clicar fora
+        document.addEventListener('click', function(e) {
+            if (!userToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                dropdownMenu.classList.remove('show');
+            }
+        });
+    }
+}
+
+function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('cart');
+    
+    showNotification('Logout realizado com sucesso!', 'success');
+    
+    setTimeout(() => {
+        window.location.href = 'index.html';
+    }, 1000);
+}
+
+// Verificar se o usuário tem permissão para acessar uma página
+function requireAuth() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        showNotification('Você precisa fazer login para acessar esta página', 'warning');
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 2000);
+        return false;
+    }
+    return true;
+}
+
+// Verificar se o usuário tem um role específico
+function hasRole(requiredRole) {
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user) return false;
+    
+    const roleHierarchy = {
+        'client': 1,
+        'supplier': 2,
+        'operator': 3,
+        'admin': 4
+    };
+    
+    return roleHierarchy[user.role] >= roleHierarchy[requiredRole];
+}
+
+// Obter dados do usuário atual
+function getCurrentUser() {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+}
+
+// Obter token de autorização
+function getAuthToken() {
+    return localStorage.getItem('token');
+}

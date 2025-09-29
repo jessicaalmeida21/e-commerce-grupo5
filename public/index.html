@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Commerce - Sua Loja Online | Grupo 5</title>
+    <title>E2E-Commerce MVP - Sua Loja Online</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -13,7 +13,7 @@
         <div class="container">
             <div class="header-content">
                 <div class="logo">
-                    <h1><i class="fas fa-shopping-cart"></i> E-Commerce</h1>
+                    <h1><i class="fas fa-shopping-cart"></i> E2E-Commerce</h1>
                 </div>
                 <nav class="nav-menu">
                     <ul>
@@ -22,11 +22,30 @@
                         <li><a href="contato.html">Contato</a></li>
                     </ul>
                 </nav>
-                <div class="cart-icon">
-                    <a href="#" id="cart-toggle">
-                        <i class="fas fa-shopping-cart"></i>
-                        <span class="cart-count" id="cart-count">0</span>
-                    </a>
+                <div class="header-actions">
+                    <div class="auth-links" id="auth-links">
+                        <a href="login.html" class="btn-login">Entrar</a>
+                        <a href="cadastro.html" class="btn-register">Cadastrar</a>
+                    </div>
+                    <div class="user-menu" id="user-menu" style="display: none;">
+                        <span class="user-name" id="user-name"></span>
+                        <div class="user-dropdown">
+                            <button class="user-toggle" id="user-toggle">
+                                <i class="fas fa-user-circle"></i>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="dropdown-menu" id="dropdown-menu">
+                                <a href="#" id="dashboard-link">Dashboard</a>
+                                <a href="#" onclick="logout()">Sair</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cart-icon">
+                        <a href="#" id="cart-toggle">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span class="cart-count" id="cart-count">0</span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -36,8 +55,8 @@
     <section class="banner">
         <div class="container">
             <div class="banner-content">
-                <h2>Bem-vindo ao E-Commerce</h2>
-                <p>Descubra os melhores produtos com os preços mais competitivos do mercado</p>
+                <h2>Bem-vindo ao E2E-Commerce MVP</h2>
+                <p>Plataforma completa de marketplace com autenticação, produtos, pedidos e pagamentos</p>
                 <a href="produtos.html" class="btn-primary">Ver Produtos</a>
             </div>
         </div>
@@ -50,8 +69,44 @@
             <div class="products-grid" id="featured-products">
                 <!-- Produtos serão carregados dinamicamente -->
             </div>
-            <div class="loading" id="loading">
-                <i class="fas fa-spinner fa-spin"></i> Carregando produtos...
+        </div>
+    </section>
+
+    <!-- Seção de Funcionalidades -->
+    <section class="features">
+        <div class="container">
+            <h2>Funcionalidades do MVP</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <i class="fas fa-user-shield"></i>
+                    <h3>Autenticação Segura</h3>
+                    <p>Sistema completo de login, cadastro e recuperação de senha com JWT</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-store"></i>
+                    <h3>Gestão de Produtos</h3>
+                    <p>CRUD completo para fornecedores com controle de estoque em tempo real</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-shopping-bag"></i>
+                    <h3>Carrinho Inteligente</h3>
+                    <p>Carrinho de compras com edição de quantidades e persistência local</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-credit-card"></i>
+                    <h3>Pagamentos</h3>
+                    <p>Sistema de pagamento com cartão e PIX, incluindo parcelamento</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-truck"></i>
+                    <h3>Logística</h3>
+                    <p>Acompanhamento de pedidos e cálculo automático de frete</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>Dashboard</h3>
+                    <p>Painel completo para fornecedores com estatísticas de vendas</p>
+                </div>
             </div>
         </div>
     </section>
@@ -61,25 +116,24 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-section">
-                    <h3>E-Commerce</h3>
-                    <p>Sua loja online de confiança</p>
+                    <h3>E2E-Commerce MVP</h3>
+                    <p>Plataforma completa de marketplace</p>
                 </div>
                 <div class="footer-section">
                     <h4>Links Úteis</h4>
                     <ul>
-                        <li><a href="#">Termos de Serviço</a></li>
-                        <li><a href="#">Política de Privacidade</a></li>
-                        <li><a href="#">Sobre Nós</a></li>
+                        <li><a href="https://github.com/jessicaalmeida21/e-commerce-grupo5" target="_blank">GitHub</a></li>
+                        <li><a href="https://github.com/jessicaalmeida21/e-commerce-grupo5/blob/main/INSTALACAO.md" target="_blank">Documentação</a></li>
+                        <li><a href="contato.html">Contato</a></li>
                     </ul>
                 </div>
                 <div class="footer-section">
-                    <h4>Contato</h4>
-                    <p>Email: contato@ecommerce.com</p>
-                    <p>Telefone: (11) 99999-9999</p>
+                    <h4>Tecnologias</h4>
+                    <p>Node.js • Express • MySQL • HTML5 • CSS3 • JavaScript</p>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 E-Commerce. Todos os direitos reservados.</p>
+                <p>&copy; 2024 E2E-Commerce MVP. Desenvolvido pelo Grupo 5.</p>
             </div>
         </div>
     </footer>
@@ -104,5 +158,6 @@
     </div>
 
     <script src="script.js"></script>
+    <script src="test-accounts.js"></script>
 </body>
 </html>

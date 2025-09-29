@@ -224,6 +224,50 @@ Para dúvidas ou suporte, entre em contato:
 - **Email**: contato@ecommerce.com
 - **Telefone**: (11) 99999-9999
 
+## 🚀 Deploy Online
+
+Este projeto está configurado para deploy automático no **Railway** - uma plataforma completa que inclui hospedagem e banco de dados.
+
+### 🌐 Deploy Principal: Railway ⭐
+
+**URL do projeto:** `https://e-commerce-grupo5-production.up.railway.app`
+
+#### **Vantagens do Railway:**
+- ✅ **Gratuito** com limites generosos
+- ✅ **Banco MySQL incluído** (sem configuração adicional)
+- ✅ **Deploy automático** via GitHub
+- ✅ **HTTPS automático** e seguro
+- ✅ **Logs em tempo real** para debug
+- ✅ **Escalabilidade** conforme o projeto cresce
+
+#### **Como funciona:**
+1. **Push no GitHub** → Deploy automático no Railway
+2. **Banco de dados** → MySQL gratuito incluído
+3. **Domínio** → URL personalizada automática
+4. **Monitoramento** → Logs e métricas em tempo real
+
+### 🔧 Configuração Atual
+
+O projeto já está configurado com:
+- ✅ **Banco de dados:** MySQL no Railway
+- ✅ **Variáveis de ambiente:** Configuradas automaticamente
+- ✅ **CORS:** Ajustado para produção
+- ✅ **Deploy:** Automático via GitHub
+
+### 📋 Scripts de Deploy
+
+```bash
+# Deploy no Railway (Windows)
+deploy-railway.bat
+
+# Deploy no Railway (PowerShell)
+.\deploy-railway.ps1
+```
+
+### 🎯 **Recomendação**
+
+**Use apenas o Railway** - é mais simples, eficiente e tem tudo que você precisa em um só lugar!
+
 ## 🚀 Atualizações Automáticas
 
 Este projeto está configurado para atualizações automáticas no GitHub. Use os scripts fornecidos para facilitar o processo.

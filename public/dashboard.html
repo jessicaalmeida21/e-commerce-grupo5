@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - E2E Commerce</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Cabeçalho -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <h1><i class="fas fa-shopping-cart"></i> E2E-Commerce</h1>
+                </div>
+                <nav class="nav-menu">
+                    <ul>
+                        <li><a href="index.html">Início</a></li>
+                        <li><a href="produtos.html">Produtos</a></li>
+                        <li><a href="contato.html">Contato</a></li>
+                    </ul>
+                </nav>
+                <div class="header-actions">
+                    <div class="user-menu" id="user-menu">
+                        <span class="user-name" id="user-name"></span>
+                        <div class="user-dropdown">
+                            <button class="user-toggle" id="user-toggle">
+                                <i class="fas fa-user-circle"></i>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="dropdown-menu" id="dropdown-menu">
+                                <a href="#" id="dashboard-link">Dashboard</a>
+                                <a href="#" onclick="logout()">Sair</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cart-icon">
+                        <a href="#" id="cart-toggle">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span class="cart-count" id="cart-count">0</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Dashboard Content -->
+    <main class="dashboard-main">
+        <div class="container">
+            <div class="dashboard-header">
+                <h1>Dashboard</h1>
+                <p>Bem-vindo ao seu painel de controle</p>
+            </div>
+
+            <!-- Tabs de Navegação -->
+            <div class="dashboard-tabs">
+                <button class="tab-btn active" data-tab="overview">
+                    <i class="fas fa-chart-line"></i> Visão Geral
+                </button>
+                <button class="tab-btn" data-tab="orders">
+                    <i class="fas fa-shopping-bag"></i> Pedidos
+                </button>
+                <button class="tab-btn" data-tab="products" id="products-tab" style="display: none;">
+                    <i class="fas fa-box"></i> Produtos
+                </button>
+                <button class="tab-btn" data-tab="profile">
+                    <i class="fas fa-user"></i> Perfil
+                </button>
+            </div>
+
+            <!-- Conteúdo das Tabs -->
+            <div class="dashboard-content">
+                <!-- Tab: Visão Geral -->
+                <div class="tab-content active" id="overview">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Pedidos</h3>
+                                <p class="stat-number" id="total-orders">0</p>
+                                <span class="stat-label">Total de pedidos</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Receita</h3>
+                                <p class="stat-number" id="total-revenue">R$ 0,00</p>
+                                <span class="stat-label">Receita total</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-box"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Produtos</h3>
+                                <p class="stat-number" id="total-products">0</p>
+                                <span class="stat-label">Produtos cadastrados</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Avaliação</h3>
+                                <p class="stat-number" id="avg-rating">0.0</p>
+                                <span class="stat-label">Avaliação média</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="recent-orders">
+                        <h3>Pedidos Recentes</h3>
+                        <div class="orders-list" id="recent-orders-list">
+                            <p class="no-data">Nenhum pedido encontrado</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Pedidos -->
+                <div class="tab-content" id="orders">
+                    <div class="orders-header">
+                        <h3>Meus Pedidos</h3>
+                        <div class="filter-orders">
+                            <select id="order-status-filter">
+                                <option value="">Todos os status</option>
+                                <option value="pending">Pendente</option>
+                                <option value="processing">Processando</option>
+                                <option value="shipped">Enviado</option>
+                                <option value="delivered">Entregue</option>
+                                <option value="cancelled">Cancelado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="orders-list" id="orders-list">
+                        <p class="no-data">Nenhum pedido encontrado</p>
+                    </div>
+                </div>
+
+                <!-- Tab: Produtos (apenas para fornecedores) -->
+                <div class="tab-content" id="products">
+                    <div class="products-header">
+                        <h3>Meus Produtos</h3>
+                        <button class="btn-primary" id="add-product-btn">
+                            <i class="fas fa-plus"></i> Adicionar Produto
+                        </button>
+                    </div>
+                    <div class="products-list" id="supplier-products-list">
+                        <p class="no-data">Nenhum produto cadastrado</p>
+                    </div>
+                </div>
+
+                <!-- Tab: Perfil -->
+                <div class="tab-content" id="profile">
+                    <div class="profile-section">
+                        <h3>Informações Pessoais</h3>
+                        <form id="profile-form" class="profile-form">
+                            <div class="form-group">
+                                <label for="profile-name">Nome Completo</label>
+                                <input type="text" id="profile-name" name="name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-email">Email</label>
+                                <input type="email" id="profile-email" name="email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-phone">Telefone</label>
+                                <input type="tel" id="profile-phone" name="phone">
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-address">Endereço</label>
+                                <textarea id="profile-address" name="address" rows="3"></textarea>
+                            </div>
+                            <button type="submit" class="btn-primary">Salvar Alterações</button>
+                        </form>
+                    </div>
+
+                    <div class="profile-section">
+                        <h3>Alterar Senha</h3>
+                        <form id="password-form" class="profile-form">
+                            <div class="form-group">
+                                <label for="current-password">Senha Atual</label>
+                                <input type="password" id="current-password" name="currentPassword" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="new-password">Nova Senha</label>
+                                <input type="password" id="new-password" name="newPassword" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="confirm-password">Confirmar Nova Senha</label>
+                                <input type="password" id="confirm-password" name="confirmPassword" required>
+                            </div>
+                            <button type="submit" class="btn-primary">Alterar Senha</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal do Carrinho -->
+    <div class="cart-modal" id="cart-modal">
+        <div class="cart-content">
+            <div class="cart-header">
+                <h3>Carrinho de Compras</h3>
+                <button class="close-cart" id="close-cart">&times;</button>
+            </div>
+            <div class="cart-items" id="cart-items">
+                <!-- Itens do carrinho serão inseridos aqui -->
+            </div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <strong>Total: R$ <span id="cart-total">0,00</span></strong>
+                </div>
+                <button class="btn-checkout" id="checkout-btn">Finalizar Compra</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>

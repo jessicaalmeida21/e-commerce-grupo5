@@ -34,6 +34,117 @@ header {
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.auth-links {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.btn-login, .btn-register {
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.btn-login {
+    color: white;
+    background-color: transparent;
+    border-color: rgba(255,255,255,0.3);
+}
+
+.btn-login:hover {
+    background-color: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.5);
+}
+
+.btn-register {
+    color: #28a745;
+    background-color: white;
+    border-color: white;
+}
+
+.btn-register:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-1px);
+}
+
+.user-menu {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.user-name {
+    color: white;
+    font-weight: 500;
+}
+
+.user-dropdown {
+    position: relative;
+}
+
+.user-toggle {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.user-toggle:hover {
+    background-color: rgba(255,255,255,0.1);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 150px;
+    z-index: 1000;
+    display: none;
+    overflow: hidden;
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-menu a {
+    display: block;
+    padding: 0.75rem 1rem;
+    color: #333;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.dropdown-menu a:last-child {
+    border-bottom: none;
+}
+
+.dropdown-menu a:hover {
+    background-color: #f8f9fa;
+    color: #28a745;
 }
 
 .logo h1 {
@@ -168,9 +279,26 @@ header {
     height: 200px;
     object-fit: cover;
     background-color: #f8f9fa;
+    transition: transform 0.3s ease;
+    border-radius: 8px 8px 0 0;
+}
+
+.product-image:hover {
+    transform: scale(1.05);
+}
+
+/* Fix para evitar que as imagens "pulem" durante o carregamento */
+.product-card {
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
 }
 
 .product-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     padding: 1.5rem;
 }
 
