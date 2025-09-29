@@ -270,8 +270,8 @@ router.post('/debit-card', authenticateToken, (req, res) => {
         if (mockCard.result === 'approved') {
             newPayment.updateStatus('paid', paymentId);
             payments.push(newPayment);
-            
-            res.json({
+
+        res.json({
                 success: true,
                 paymentId: paymentId,
                 status: 'paid',

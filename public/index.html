@@ -12,19 +12,19 @@
     <header>
         <!-- Barra superior -->
         <div class="header-top">
-            <div class="container">
+        <div class="container">
                 <div class="header-top-content">
                     <div class="location-info">
                         <i class="fas fa-map-marker-alt"></i>
                         <span>Enviar para São Paulo</span>
                     </div>
                     <div class="top-links">
-                        <a href="#">Ofertas do dia</a>
-                        <a href="#">Histórico</a>
-                        <a href="#">Supermercado</a>
-                        <a href="#">Moda</a>
-                        <a href="#">Vender</a>
-                        <a href="#">Contato</a>
+                        <a href="produtos.html?categoria=ofertas">Ofertas do dia</a>
+                        <a href="pedidos.html">Histórico</a>
+                        <a href="produtos.html?categoria=supermercado">Supermercado</a>
+                        <a href="produtos.html?categoria=moda">Moda</a>
+                        <a href="dashboard.html">Vender</a>
+                        <a href="contato.html">Contato</a>
                     </div>
                     <div class="user-account" id="user-account">
                         <div class="auth-links" id="auth-links">
@@ -39,9 +39,9 @@
                                     <i class="fas fa-chevron-down"></i>
                                 </button>
                                 <div class="dropdown-menu" id="dropdown-menu">
-                                    <a href="#" id="dashboard-link">Minha conta</a>
-                                    <a href="#">Compras</a>
-                                    <a href="#">Favoritos</a>
+                                    <a href="dashboard.html" id="dashboard-link">Minha conta</a>
+                                    <a href="pedidos.html">Compras</a>
+                                    <a href="carrinho.html">Carrinho</a>
                                     <a href="#" onclick="logout()">Sair</a>
                                 </div>
                             </div>
@@ -74,12 +74,12 @@
                     </div>
 
                     <div class="header-actions">
-                        <div class="cart-icon">
-                            <a href="#" id="cart-toggle">
-                                <i class="fas fa-shopping-cart"></i>
-                                <span class="cart-count" id="cart-count">0</span>
-                            </a>
-                        </div>
+                <div class="cart-icon">
+                    <a href="#" id="cart-toggle">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="cart-count" id="cart-count">0</span>
+                    </a>
+                </div>
                     </div>
                 </div>
             </div>
@@ -90,13 +90,13 @@
             <div class="container">
                 <nav class="nav-menu">
                     <ul>
-                        <li><a href="#" class="nav-category">Categorias</a></li>
-                        <li><a href="#" class="nav-category">Ofertas</a></li>
-                        <li><a href="#" class="nav-category">Histórico</a></li>
-                        <li><a href="#" class="nav-category">Supermercado</a></li>
-                        <li><a href="#" class="nav-category">Moda</a></li>
-                        <li><a href="#" class="nav-category">Vender</a></li>
-                        <li><a href="#" class="nav-category">Contato</a></li>
+                        <li><a href="produtos.html" class="nav-category">Produtos</a></li>
+                        <li><a href="produtos.html?categoria=ofertas" class="nav-category">Ofertas</a></li>
+                        <li><a href="pedidos.html" class="nav-category">Meus Pedidos</a></li>
+                        <li><a href="produtos.html?categoria=supermercado" class="nav-category">Supermercado</a></li>
+                        <li><a href="produtos.html?categoria=moda" class="nav-category">Moda</a></li>
+                        <li><a href="dashboard.html" class="nav-category">Dashboard</a></li>
+                        <li><a href="contato.html" class="nav-category">Contato</a></li>
                     </ul>
                 </nav>
             </div>
@@ -171,14 +171,23 @@
             <div class="footer-content">
                 <div class="footer-section">
                     <h3>E2E-Commerce MVP</h3>
-                    <p>Plataforma completa de marketplace</p>
+                    <p>Sua loja online completa</p>
                 </div>
                 <div class="footer-section">
-                    <h4>Links Úteis</h4>
+                    <h4>Navegação</h4>
                     <ul>
-                        <li><a href="https://github.com/jessicaalmeida21/e-commerce-grupo5" target="_blank">GitHub</a></li>
-                        <li><a href="https://github.com/jessicaalmeida21/e-commerce-grupo5/blob/main/INSTALACAO.md" target="_blank">Documentação</a></li>
+                        <li><a href="produtos.html">Produtos</a></li>
                         <li><a href="contato.html">Contato</a></li>
+                        <li><a href="login.html">Login</a></li>
+                        <li><a href="cadastro.html">Cadastro</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Suporte</h4>
+                    <ul>
+                        <li><a href="contato.html">Central de Ajuda</a></li>
+                        <li><a href="contato.html">Política de Privacidade</a></li>
+                        <li><a href="contato.html">Termos de Uso</a></li>
                     </ul>
                 </div>
             </div>
