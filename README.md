@@ -192,6 +192,10 @@ Para dúvidas ou suporte, entre em contato:
 - **Email**: contato@ecommerce.com
 - **Telefone**: (11) 99999-9999
 
+## 🚀 Atualizações Automáticas
+
+Este projeto está configurado para atualizações automáticas no GitHub. Use os scripts fornecidos para facilitar o processo.
+
 ---
 
 Desenvolvido com ❤️ para o Grupo 5
