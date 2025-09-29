@@ -36,8 +36,9 @@ const registerForm = document.getElementById('register-form');
         }
     }
 
-    async handleLogin(e) {
+    handleLogin(e) {
         e.preventDefault();
+        console.log('Login iniciado');
         
         const formData = new FormData(e.target);
         const loginData = {
@@ -46,59 +47,51 @@ const registerForm = document.getElementById('register-form');
             remember: formData.get('remember') === 'on'
         };
 
+        console.log('Dados do login:', loginData);
+
         // Validações básicas
         if (!loginData.email || !loginData.password) {
-            console.log('Campos vazios:', loginData);
-            this.showNotification('Por favor, preencha todos os campos.', 'error');
+            console.log('Campos vazios');
+            alert('Por favor, preencha todos os campos.');
             return;
         }
 
         if (!this.isValidEmail(loginData.email)) {
-            console.log('Email inválido:', loginData.email);
-            this.showNotification('Por favor, digite um email válido.', 'error');
+            console.log('Email inválido');
+            alert('Por favor, digite um email válido.');
             return;
         }
 
         if (loginData.password.length < 6) {
-            console.log('Senha muito curta:', loginData.password.length);
-            this.showNotification('A senha deve ter pelo menos 6 caracteres.', 'error');
+            console.log('Senha muito curta');
+            alert('A senha deve ter pelo menos 6 caracteres.');
             return;
         }
 
         // Modo demo - verificar se há usuário cadastrado
-        try {
-            const savedUser = localStorage.getItem('demo_user');
-            
-            if (!savedUser) {
-                this.showNotification('Nenhuma conta encontrada. Faça o cadastro primeiro.', 'error');
-                return;
-            }
-
-            const userData = JSON.parse(savedUser);
-            
-            // Verificar se o email corresponde
-            if (userData.email !== loginData.email) {
-                this.showNotification('Email não encontrado. Verifique o email digitado.', 'error');
-                return;
-            }
-
-            // Simular delay de rede
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Login bem-sucedido
-            this.currentUser = userData;
-            localStorage.setItem('demo_logged_in', 'true');
-            
-            this.showNotification(`Bem-vindo de volta, ${userData.firstName}!`, 'success');
-            
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1500);
-            
-        } catch (error) {
-            console.error('Login error:', error);
-            this.showNotification('Erro interno. Tente novamente.', 'error');
+        const savedUser = localStorage.getItem('demo_user');
+        console.log('Usuário salvo:', savedUser);
+        
+        if (!savedUser) {
+            alert('Nenhuma conta encontrada. Faça o cadastro primeiro.');
+            return;
         }
+
+        const userData = JSON.parse(savedUser);
+        console.log('Dados do usuário:', userData);
+        
+        // Verificar se o email corresponde
+        if (userData.email !== loginData.email) {
+            alert('Email não encontrado. Verifique o email digitado.');
+            return;
+        }
+
+        // Login bem-sucedido
+        this.currentUser = userData;
+        localStorage.setItem('demo_logged_in', 'true');
+        
+        alert(`Bem-vindo de volta, ${userData.firstName}!`);
+        window.location.href = 'index.html';
     }
 
     async handleRegister(e) {
@@ -146,11 +139,8 @@ const registerForm = document.getElementById('register-form');
             localStorage.setItem('demo_user', JSON.stringify(userData));
             localStorage.setItem('demo_logged_in', 'true');
 
-            this.showNotification('Conta criada com sucesso! Login automático realizado...', 'success');
-            
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 2000);
+            alert('Conta criada com sucesso! Login automático realizado...');
+            window.location.href = 'index.html';
             
         } catch (error) {
             console.error('Register error:', error);
