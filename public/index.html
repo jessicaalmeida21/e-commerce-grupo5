@@ -8,56 +8,151 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Cabeçalho -->
+    <!-- Cabeçalho estilo Mercado Livre -->
     <header>
-        <div class="container">
-            <div class="header-content">
-                <div class="logo">
-                    <h1><i class="fas fa-shopping-cart"></i> E2E-Commerce</h1>
-                </div>
-                <nav class="nav-menu">
-                    <ul>
-                        <li><a href="index.html" class="active">Início</a></li>
-                        <li><a href="produtos.html">Produtos</a></li>
-                        <li><a href="contato.html">Contato</a></li>
-                    </ul>
-                </nav>
-                <div class="header-actions">
-                    <div class="auth-links" id="auth-links">
-                        <a href="login.html" class="btn-login">Entrar</a>
-                        <a href="cadastro.html" class="btn-register">Cadastrar</a>
+        <!-- Barra superior -->
+        <div class="header-top">
+            <div class="container">
+                <div class="header-top-content">
+                    <div class="location-info">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Enviar para São Paulo</span>
                     </div>
-                    <div class="user-menu" id="user-menu" style="display: none;">
-                        <span class="user-name" id="user-name"></span>
-                        <div class="user-dropdown">
-                            <button class="user-toggle" id="user-toggle">
-                                <i class="fas fa-user-circle"></i>
-                                <i class="fas fa-chevron-down"></i>
-                            </button>
-                            <div class="dropdown-menu" id="dropdown-menu">
-                                <a href="#" id="dashboard-link">Dashboard</a>
-                                <a href="#" onclick="logout()">Sair</a>
+                    <div class="top-links">
+                        <a href="#">Ofertas do dia</a>
+                        <a href="#">Histórico</a>
+                        <a href="#">Supermercado</a>
+                        <a href="#">Moda</a>
+                        <a href="#">Vender</a>
+                        <a href="#">Contato</a>
+                    </div>
+                    <div class="user-account" id="user-account">
+                        <div class="auth-links" id="auth-links">
+                            <a href="login.html">Entrar</a>
+                            <a href="cadastro.html">Cadastrar</a>
+                        </div>
+                        <div class="user-menu" id="user-menu" style="display: none;">
+                            <span class="user-name" id="user-name"></span>
+                            <div class="user-dropdown">
+                                <button class="user-toggle" id="user-toggle">
+                                    <i class="fas fa-user-circle"></i>
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div class="dropdown-menu" id="dropdown-menu">
+                                    <a href="#" id="dashboard-link">Minha conta</a>
+                                    <a href="#">Compras</a>
+                                    <a href="#">Favoritos</a>
+                                    <a href="#" onclick="logout()">Sair</a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="cart-icon">
-                        <a href="#" id="cart-toggle">
-                            <i class="fas fa-shopping-cart"></i>
-                            <span class="cart-count" id="cart-count">0</span>
-                        </a>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Barra principal -->
+        <div class="header-main">
+            <div class="container">
+                <div class="header-main-content">
+                    <div class="logo">
+                        <a href="index.html">
+                            <img src="https://http2.mlstatic.com/storage/logos-api-admin/a5f047d0-9be0-11ec-aad4-c2181f3a5f8a-m.svg" alt="E2E Commerce" style="height: 34px;">
+                        </a>
+                    </div>
+                    
+                    <div class="search-container">
+                        <div class="search-box">
+                            <input type="text" placeholder="Buscar produtos, marcas e mais..." id="main-search">
+                            <button type="submit" id="search-btn">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <div class="search-suggestions" id="search-suggestions" style="display: none;">
+                            <!-- Sugestões de busca aparecerão aqui -->
+                        </div>
+                    </div>
+
+                    <div class="header-actions">
+                        <div class="cart-icon">
+                            <a href="#" id="cart-toggle">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span class="cart-count" id="cart-count">0</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra inferior -->
+        <div class="header-bottom">
+            <div class="container">
+                <nav class="nav-menu">
+                    <ul>
+                        <li><a href="#" class="nav-category">Categorias</a></li>
+                        <li><a href="#" class="nav-category">Ofertas</a></li>
+                        <li><a href="#" class="nav-category">Histórico</a></li>
+                        <li><a href="#" class="nav-category">Supermercado</a></li>
+                        <li><a href="#" class="nav-category">Moda</a></li>
+                        <li><a href="#" class="nav-category">Vender</a></li>
+                        <li><a href="#" class="nav-category">Contato</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
     </header>
 
-    <!-- Banner -->
-    <section class="banner">
+    <!-- Banner principal -->
+    <section class="main-banner">
         <div class="container">
             <div class="banner-content">
-                <h2>Bem-vindo ao E2E-Commerce MVP</h2>
-                <p>Plataforma completa de marketplace com autenticação, produtos, pedidos e pagamentos</p>
-                <a href="produtos.html" class="btn-primary">Ver Produtos</a>
+                <div class="banner-text">
+                    <h1>Encontre tudo o que você precisa</h1>
+                    <p>Milhões de produtos com os melhores preços e entrega rápida</p>
+                    <div class="banner-search">
+                        <input type="text" placeholder="Buscar produtos, marcas e mais..." id="banner-search">
+                        <button type="submit" id="banner-search-btn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="banner-image">
+                    <img src="https://http2.mlstatic.com/storage/logos-api-admin/a5f047d0-9be0-11ec-aad4-c2181f3a5f8a-m.svg" alt="Banner" style="opacity: 0.1;">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Categorias -->
+    <section class="categories">
+        <div class="container">
+            <h2>Categorias</h2>
+            <div class="categories-grid">
+                <div class="category-item">
+                    <i class="fas fa-laptop"></i>
+                    <span>Eletrônicos</span>
+                </div>
+                <div class="category-item">
+                    <i class="fas fa-tshirt"></i>
+                    <span>Moda</span>
+                </div>
+                <div class="category-item">
+                    <i class="fas fa-home"></i>
+                    <span>Casa e Jardim</span>
+                </div>
+                <div class="category-item">
+                    <i class="fas fa-gamepad"></i>
+                    <span>Games</span>
+                </div>
+                <div class="category-item">
+                    <i class="fas fa-dumbbell"></i>
+                    <span>Esportes</span>
+                </div>
+                <div class="category-item">
+                    <i class="fas fa-book"></i>
+                    <span>Livros</span>
+                </div>
             </div>
         </div>
     </section>

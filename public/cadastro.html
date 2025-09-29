@@ -3,85 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro - E2E Commerce</title>
+    <title>Cadastrar - E2E Commerce</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <div class="auth-container">
-        <div class="auth-card">
-            <div class="auth-header">
-                <h1><i class="fas fa-shopping-cart"></i> E2E Commerce</h1>
-                <p>Crie sua conta</p>
-            </div>
-
-            <form id="register-form" class="auth-form">
-                <div class="form-group">
-                    <label for="name">Nome Completo</label>
-                    <input type="text" id="name" name="name" required>
-                    <i class="fas fa-user form-icon"></i>
-                </div>
-
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required>
-                    <i class="fas fa-envelope form-icon"></i>
-                </div>
-
-                <div class="form-group">
-                    <label for="role">Tipo de Conta</label>
-                    <select id="role" name="role" required>
-                        <option value="">Selecione o tipo de conta</option>
-                        <option value="client">Cliente</option>
-                        <option value="supplier">Fornecedor</option>
-                    </select>
-                    <i class="fas fa-user-tag form-icon"></i>
-                </div>
-
-                <div class="form-group">
-                    <label for="password">Senha</label>
-                    <input type="password" id="password" name="password" required>
-                    <i class="fas fa-lock form-icon"></i>
-                    <button type="button" class="toggle-password" onclick="togglePassword('password')">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <div class="password-requirements">
-                        <small>Mínimo 10 caracteres com números, letras e símbolos</small>
+    <!-- Cabeçalho -->
+    <header>
+        <div class="header-main">
+            <div class="container">
+                <div class="header-main-content">
+                    <div class="logo">
+                        <a href="index.html">
+                            <img src="https://http2.mlstatic.com/storage/logos-api-admin/a5f047d0-9be0-11ec-aad4-c2181f3a5f8a-m.svg" alt="E2E Commerce" style="height: 34px;">
+                        </a>
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="confirmPassword">Confirmar Senha</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" required>
-                    <i class="fas fa-lock form-icon"></i>
-                    <button type="button" class="toggle-password" onclick="togglePassword('confirmPassword')">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                </div>
-
-                <div class="form-options">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="terms" required>
-                        <span class="checkmark"></span>
-                        Aceito os <a href="#" target="_blank">Termos de Uso</a> e <a href="#" target="_blank">Política de Privacidade</a>
-                    </label>
-                </div>
-
-                <button type="submit" class="btn-primary btn-full">
-                    <i class="fas fa-user-plus"></i> Criar Conta
-                </button>
-
-                <div class="auth-divider">
-                    <span>ou</span>
-                </div>
-
-                <div class="auth-links">
-                    <p>Já tem uma conta? <a href="login.html">Faça login</a></p>
-                </div>
-            </form>
+            </div>
         </div>
-    </div>
+    </header>
 
+    <!-- Formulário de Cadastro -->
+    <section class="auth-section">
+        <div class="container">
+            <div class="auth-container">
+                <div class="auth-form">
+                    <h1>Cadastrar</h1>
+                    <p class="auth-subtitle">Crie sua conta e comece a comprar</p>
+                    
+                    <form id="register-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="firstName">Nome</label>
+                                <input type="text" id="firstName" name="firstName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="lastName">Sobrenome</label>
+                                <input type="text" id="lastName" name="lastName" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="email">E-mail</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="phone">Telefone</label>
+                            <input type="tel" id="phone" name="phone" placeholder="(11) 99999-9999">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="password">Senha</label>
+                            <input type="password" id="password" name="password" required>
+                            <div class="password-strength">
+                                <div class="strength-bar">
+                                    <div class="strength-fill" id="strength-fill"></div>
+                                </div>
+                                <span class="strength-text" id="strength-text">Digite uma senha</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirmar Senha</label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="role">Tipo de Conta</label>
+                            <select id="role" name="role" required>
+                                <option value="">Selecione o tipo de conta</option>
+                                <option value="client">Cliente - Comprar produtos</option>
+                                <option value="supplier">Fornecedor - Vender produtos</option>
+                                <option value="operator">Operador - Gerenciar pedidos</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-options">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="terms" required>
+                                <span class="checkmark"></span>
+                                Aceito os <a href="#" class="terms-link">Termos de Uso</a> e <a href="#" class="terms-link">Política de Privacidade</a>
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary btn-full">Criar Conta</button>
+                    </form>
+                    
+                    <div class="auth-divider">
+                        <span>ou</span>
+                    </div>
+                    
+                    <div class="social-login">
+                        <button class="btn-social btn-google">
+                            <i class="fab fa-google"></i>
+                            Continuar com Google
+                        </button>
+                        <button class="btn-social btn-facebook">
+                            <i class="fab fa-facebook-f"></i>
+                            Continuar com Facebook
+                        </button>
+                    </div>
+                    
+                    <div class="auth-footer">
+                        <p>Já tem uma conta? <a href="login.html">Entrar</a></p>
+                    </div>
+                </div>
+                
+                <div class="auth-benefits">
+                    <h3>Vantagens de se cadastrar</h3>
+                    <ul>
+                        <li><i class="fas fa-check"></i> Acesso a ofertas exclusivas</li>
+                        <li><i class="fas fa-check"></i> Histórico de compras</li>
+                        <li><i class="fas fa-check"></i> Lista de desejos</li>
+                        <li><i class="fas fa-check"></i> Entrega mais rápida</li>
+                        <li><i class="fas fa-check"></i> Suporte prioritário</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Rodapé -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>E2E Commerce</h4>
+                    <p>Sua loja online completa com todas as funcionalidades que você precisa.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Links Úteis</h4>
+                    <ul>
+                        <li><a href="#">Sobre nós</a></li>
+                        <li><a href="#">Contato</a></li>
+                        <li><a href="#">Ajuda</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Suporte</h4>
+                    <ul>
+                        <li><a href="#">Central de Ajuda</a></li>
+                        <li><a href="#">Política de Privacidade</a></li>
+                        <li><a href="#">Termos de Uso</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 E2E Commerce. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
     <script src="auth.js"></script>
 </body>
 </html>

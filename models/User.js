@@ -2,12 +2,13 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 class User {
-    constructor(id, name, email, password, role, isActive = true, createdAt = null, updatedAt = null) {
+    constructor(id, name, email, password, role, phone = null, isActive = true, createdAt = null, updatedAt = null) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.password = password;
         this.role = role; // 'client', 'supplier', 'admin', 'operator'
+        this.phone = phone;
         this.isActive = isActive;
         this.createdAt = createdAt || new Date();
         this.updatedAt = updatedAt || new Date();

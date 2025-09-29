@@ -36,14 +36,24 @@ const authenticateToken = (req, res, next) => {
 // POST /api/auth/register - Cadastro de usuário
 router.post('/register', async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
+        const { firstName, lastName, email, password, confirmPassword, role, phone } = req.body;
 
         // Validar dados obrigatórios
-        if (!name || !email || !password || !role) {
+        if (!firstName || !lastName || !email || !password || !role) {
             return res.status(400).json({ 
-                error: 'Todos os campos são obrigatórios' 
+                error: 'Todos os campos obrigatórios devem ser preenchidos' 
             });
         }
+
+        // Validar confirmação de senha
+        if (password !== confirmPassword) {
+            return res.status(400).json({ 
+                error: 'As senhas não coincidem' 
+            });
+        }
+
+        // Combinar nome e sobrenome
+        const name = `${firstName} ${lastName}`;
 
         // Verificar se email já existe
         const existingUser = users.find(user => user.email === email);
@@ -59,7 +69,8 @@ router.post('/register', async (req, res) => {
             name,
             email,
             password,
-            role
+            role,
+            phone
         );
 
         // Validar dados

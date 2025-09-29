@@ -1,406 +1,290 @@
-// Configurações da API
-const API_BASE_URL = '/api';
+// Sistema de Autenticação
+class AuthSystem {
+    constructor() {
+        this.currentUser = null;
+        this.init();
+    }
 
-// Elementos DOM
-const loginForm = document.getElementById('login-form');
-const registerForm = document.getElementById('register-form');
+    init() {
+        this.loadUserFromStorage();
+        this.setupEventListeners();
+    }
 
-// Inicialização
+    setupEventListeners() {
+        // Login form
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+        }
+
+        // Register form
+        const registerForm = document.getElementById('register-form');
+        if (registerForm) {
+            registerForm.addEventListener('submit', (e) => this.handleRegister(e));
+        }
+
+        // Password strength checker
+        const passwordInput = document.getElementById('password');
+        if (passwordInput) {
+            passwordInput.addEventListener('input', () => this.checkPasswordStrength());
+        }
+
+        // Confirm password checker
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        if (confirmPasswordInput) {
+            confirmPasswordInput.addEventListener('input', () => this.checkPasswordMatch());
+        }
+    }
+
+    async handleLogin(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const loginData = {
+            email: formData.get('email'),
+            password: formData.get('password'),
+            remember: formData.get('remember') === 'on'
+        };
+
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(loginData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                this.currentUser = result.user;
+                this.saveUserToStorage(result.user, result.token, loginData.remember);
+                this.showNotification('Login realizado com sucesso!', 'success');
+                
+                // Redirect to dashboard or home
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1000);
+            } else {
+                this.showNotification(result.message || 'Erro ao fazer login', 'error');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            this.showNotification('Erro de conexão. Tente novamente.', 'error');
+        }
+    }
+
+    async handleRegister(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const registerData = {
+            firstName: formData.get('firstName'),
+            lastName: formData.get('lastName'),
+            email: formData.get('email'),
+            phone: formData.get('phone'),
+            password: formData.get('password'),
+            confirmPassword: formData.get('confirmPassword'),
+            role: formData.get('role')
+        };
+
+        // Validate password match
+        if (registerData.password !== registerData.confirmPassword) {
+            this.showNotification('As senhas não coincidem', 'error');
+            return;
+        }
+
+        // Validate password strength
+        if (!this.isPasswordStrong(registerData.password)) {
+            this.showNotification('A senha deve ter pelo menos 8 caracteres, incluindo letras e números', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(registerData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                this.showNotification('Conta criada com sucesso! Faça login para continuar.', 'success');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+            } else {
+                this.showNotification(result.message || 'Erro ao criar conta', 'error');
+            }
+        } catch (error) {
+            console.error('Register error:', error);
+            this.showNotification('Erro de conexão. Tente novamente.', 'error');
+        }
+    }
+
+    checkPasswordStrength() {
+        const password = document.getElementById('password').value;
+        const strengthFill = document.getElementById('strength-fill');
+        const strengthText = document.getElementById('strength-text');
+
+        if (!strengthFill || !strengthText) return;
+
+        const strength = this.calculatePasswordStrength(password);
+        
+        strengthFill.style.width = strength.percentage + '%';
+        strengthFill.className = 'strength-fill ' + strength.level;
+        strengthText.textContent = strength.text;
+    }
+
+    calculatePasswordStrength(password) {
+        let score = 0;
+        let feedback = [];
+
+        if (password.length >= 8) score += 25;
+        else feedback.push('pelo menos 8 caracteres');
+
+        if (/[a-z]/.test(password)) score += 25;
+        else feedback.push('letras minúsculas');
+
+        if (/[A-Z]/.test(password)) score += 25;
+        else feedback.push('letras maiúsculas');
+
+        if (/[0-9]/.test(password)) score += 25;
+        else feedback.push('números');
+
+        if (score < 50) {
+            return { percentage: score, level: 'weak', text: 'Senha fraca' };
+        } else if (score < 75) {
+            return { percentage: score, level: 'medium', text: 'Senha média' };
+        } else {
+            return { percentage: score, level: 'strong', text: 'Senha forte' };
+        }
+    }
+
+    isPasswordStrong(password) {
+        return password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /[0-9]/.test(password);
+    }
+
+    checkPasswordMatch() {
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const confirmInput = document.getElementById('confirmPassword');
+
+        if (confirmPassword && password !== confirmPassword) {
+            confirmInput.style.borderColor = '#dc3545';
+        } else {
+            confirmInput.style.borderColor = '#28a745';
+        }
+    }
+
+    saveUserToStorage(user, token, remember = false) {
+        if (remember) {
+            localStorage.setItem('user', JSON.stringify(user));
+            localStorage.setItem('token', token);
+        } else {
+            sessionStorage.setItem('user', JSON.stringify(user));
+            sessionStorage.setItem('token', token);
+        }
+    }
+
+    loadUserFromStorage() {
+        const user = localStorage.getItem('user') || sessionStorage.getItem('user');
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        
+        if (user && token) {
+            this.currentUser = JSON.parse(user);
+        }
+    }
+
+    logout() {
+        this.currentUser = null;
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+        
+        this.showNotification('Logout realizado com sucesso!', 'success');
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 1000);
+    }
+
+    showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <div class="notification-content">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            </div>
+        `;
+
+        // Add to page
+        document.body.appendChild(notification);
+
+        // Show notification
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 100);
+
+        // Remove notification
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
+    }
+
+    getCurrentUser() {
+        return this.currentUser;
+    }
+
+    getAuthToken() {
+        return localStorage.getItem('token') || sessionStorage.getItem('token');
+    }
+
+    isAuthenticated() {
+        return !!this.currentUser;
+    }
+
+    hasRole(role) {
+        return this.currentUser && this.currentUser.role === role;
+    }
+}
+
+// Initialize auth system
+const auth = new AuthSystem();
+
+// Global functions for compatibility
+function logout() {
+    auth.logout();
+}
+
+function getCurrentUser() {
+    return auth.getCurrentUser();
+}
+
+function getAuthToken() {
+    return auth.getAuthToken();
+}
+
+function isAuthenticated() {
+    return auth.isAuthenticated();
+}
+
+function hasRole(role) {
+    return auth.hasRole(role);
+}
+
+// Check auth status on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Verificar se já está logado
-    if (localStorage.getItem('token')) {
-        redirectToDashboard();
-    }
-
-    // Configurar formulários
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
-    }
-    
-    if (registerForm) {
-        registerForm.addEventListener('submit', handleRegister);
+    if (typeof checkAuthStatus === 'function') {
+        checkAuthStatus();
     }
 });
-
-// Função de login
-async function handleLogin(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(loginForm);
-    const loginData = {
-        email: formData.get('email'),
-        password: formData.get('password')
-    };
-
-    try {
-        showLoading('Entrando...');
-        
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(loginData)
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            // Salvar token e dados do usuário
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
-            
-            showNotification('Login realizado com sucesso!', 'success');
-            
-            // Redirecionar após 1 segundo
-            setTimeout(() => {
-                redirectToDashboard();
-            }, 1000);
-        } else {
-            showNotification(data.error || 'Erro no login', 'error');
-        }
-    } catch (error) {
-        console.error('Erro no login:', error);
-        showNotification('Erro de conexão. Tente novamente.', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-// Função de cadastro
-async function handleRegister(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(registerForm);
-    const registerData = {
-        name: formData.get('name'),
-        email: formData.get('email'),
-        password: formData.get('password'),
-        role: formData.get('role')
-    };
-
-    // Validar confirmação de senha
-    const confirmPassword = formData.get('confirmPassword');
-    if (registerData.password !== confirmPassword) {
-        showNotification('As senhas não coincidem', 'error');
-        return;
-    }
-
-    // Validar senha
-    if (!isValidPassword(registerData.password)) {
-        showNotification('Senha deve ter pelo menos 10 caracteres com números, letras e símbolos', 'error');
-        return;
-    }
-
-    try {
-        showLoading('Criando conta...');
-        
-        const response = await fetch(`${API_BASE_URL}/auth/register`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(registerData)
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            showNotification('Conta criada com sucesso!', 'success');
-            
-            // Redirecionar para login após 2 segundos
-            setTimeout(() => {
-                window.location.href = 'login.html';
-            }, 2000);
-        } else {
-            if (data.details) {
-                showNotification(data.details.join(', '), 'error');
-            } else {
-                showNotification(data.error || 'Erro no cadastro', 'error');
-            }
-        }
-    } catch (error) {
-        console.error('Erro no cadastro:', error);
-        showNotification('Erro de conexão. Tente novamente.', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-// Login com conta de demonstração
-async function loginDemo(email, password) {
-    document.getElementById('email').value = email;
-    document.getElementById('password').value = password;
-    
-    // Simular clique no botão de login
-    const submitEvent = new Event('submit');
-    loginForm.dispatchEvent(submitEvent);
-}
-
-// Redirecionar para dashboard baseado no perfil
-function redirectToDashboard() {
-    const user = JSON.parse(localStorage.getItem('user'));
-    
-    switch (user.role) {
-        case 'admin':
-            window.location.href = 'dashboard.html?tab=admin';
-            break;
-        case 'supplier':
-            window.location.href = 'dashboard.html?tab=supplier';
-            break;
-        case 'operator':
-            window.location.href = 'dashboard.html?tab=operator';
-            break;
-        case 'client':
-        default:
-            window.location.href = 'index.html';
-            break;
-    }
-}
-
-// Validar senha
-function isValidPassword(password) {
-    // Mínimo 10 caracteres, com números, letras e caracteres especiais
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10,}$/;
-    return passwordRegex.test(password);
-}
-
-// Alternar visibilidade da senha
-function togglePassword(fieldId = 'password') {
-    const field = document.getElementById(fieldId);
-    const button = field.parentNode.querySelector('.toggle-password i');
-    
-    if (field.type === 'password') {
-        field.type = 'text';
-        button.classList.remove('fa-eye');
-        button.classList.add('fa-eye-slash');
-    } else {
-        field.type = 'password';
-        button.classList.remove('fa-eye-slash');
-        button.classList.add('fa-eye');
-    }
-}
-
-// Esqueci minha senha
-async function forgotPassword() {
-    const email = prompt('Digite seu email para recuperação de senha:');
-    if (!email) return;
-
-    try {
-        showLoading('Enviando instruções...');
-        
-        const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email })
-        });
-
-        const data = await response.json();
-        showNotification(data.message, 'info');
-    } catch (error) {
-        console.error('Erro na recuperação:', error);
-        showNotification('Erro de conexão. Tente novamente.', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-// Logout
-function logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('cart');
-    
-    showNotification('Logout realizado com sucesso!', 'success');
-    
-    setTimeout(() => {
-        window.location.href = 'login.html';
-    }, 1000);
-}
-
-// Verificar autenticação
-function checkAuth() {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        window.location.href = 'login.html';
-        return false;
-    }
-    return true;
-}
-
-// Obter token de autorização
-function getAuthToken() {
-    return localStorage.getItem('token');
-}
-
-// Obter dados do usuário
-function getCurrentUser() {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
-}
-
-// Verificar permissão
-function hasPermission(requiredRole) {
-    const user = getCurrentUser();
-    if (!user) return false;
-    
-    const roleHierarchy = {
-        'client': 1,
-        'supplier': 2,
-        'operator': 3,
-        'admin': 4
-    };
-    
-    return roleHierarchy[user.role] >= roleHierarchy[requiredRole];
-}
-
-// Mostrar loading
-function showLoading(message = 'Carregando...') {
-    // Remover loading existente
-    const existingLoading = document.querySelector('.loading-overlay');
-    if (existingLoading) {
-        existingLoading.remove();
-    }
-
-    const loading = document.createElement('div');
-    loading.className = 'loading-overlay';
-    loading.innerHTML = `
-        <div class="loading-content">
-            <i class="fas fa-spinner fa-spin"></i>
-            <p>${message}</p>
-        </div>
-    `;
-    
-    document.body.appendChild(loading);
-}
-
-// Esconder loading
-function hideLoading() {
-    const loading = document.querySelector('.loading-overlay');
-    if (loading) {
-        loading.remove();
-    }
-}
-
-// Mostrar notificação
-function showNotification(message, type = 'info') {
-    // Remover notificação existente
-    const existingNotification = document.querySelector('.notification');
-    if (existingNotification) {
-        existingNotification.remove();
-    }
-    
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.innerHTML = `
-        <div class="notification-content">
-            <i class="fas fa-${getNotificationIcon(type)}"></i>
-            <span>${message}</span>
-        </div>
-    `;
-    
-    // Adicionar estilos
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${getNotificationColor(type)};
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 5px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        z-index: 3000;
-        animation: slideIn 0.3s ease-out;
-        max-width: 400px;
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Remover após 5 segundos
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease-in';
-        setTimeout(() => notification.remove(), 300);
-    }, 5000);
-}
-
-// Obter ícone da notificação
-function getNotificationIcon(type) {
-    switch (type) {
-        case 'success': return 'check-circle';
-        case 'error': return 'exclamation-circle';
-        case 'warning': return 'exclamation-triangle';
-        default: return 'info-circle';
-    }
-}
-
-// Obter cor da notificação
-function getNotificationColor(type) {
-    switch (type) {
-        case 'success': return '#28a745';
-        case 'error': return '#dc3545';
-        case 'warning': return '#ffc107';
-        default: return '#17a2b8';
-    }
-}
-
-// Adicionar estilos para notificações
-const notificationStyles = document.createElement('style');
-notificationStyles.textContent = `
-    @keyframes slideIn {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-    
-    @keyframes slideOut {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-    }
-    
-    .loading-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 4000;
-    }
-    
-    .loading-content {
-        background: white;
-        padding: 2rem;
-        border-radius: 10px;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    
-    .loading-content i {
-        font-size: 2rem;
-        color: #28a745;
-        margin-bottom: 1rem;
-    }
-    
-    .loading-content p {
-        margin: 0;
-        color: #333;
-        font-weight: 500;
-    }
-`;
-document.head.appendChild(notificationStyles);
