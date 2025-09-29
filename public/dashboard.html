@@ -66,6 +66,9 @@
                 <button class="tab-btn" data-tab="products" id="products-tab" style="display: none;">
                     <i class="fas fa-box"></i> Produtos
                 </button>
+                <button class="tab-btn" data-tab="admin" id="admin-tab" style="display: none;">
+                    <i class="fas fa-crown"></i> Administração
+                </button>
                 <button class="tab-btn" data-tab="profile">
                     <i class="fas fa-user"></i> Perfil
                 </button>
@@ -156,6 +159,37 @@
                     </div>
                     <div class="products-list" id="supplier-products-list">
                         <p class="no-data">Nenhum produto cadastrado</p>
+                    </div>
+                </div>
+
+                <!-- Tab: Administração (apenas para admin) -->
+                <div class="tab-content" id="admin">
+                    <h3>Painel Administrativo</h3>
+                    <div class="admin-grid">
+                        <div class="admin-card">
+                            <i class="fas fa-users"></i>
+                            <h4>Gerenciar Usuários</h4>
+                            <p>Criar, editar e excluir usuários do sistema</p>
+                            <a href="admin-users.html" class="btn-primary">Gerenciar</a>
+                        </div>
+                        <div class="admin-card">
+                            <i class="fas fa-box"></i>
+                            <h4>Gerenciar Produtos</h4>
+                            <p>Administrar todos os produtos da plataforma</p>
+                            <button class="btn-primary" disabled>Em breve</button>
+                        </div>
+                        <div class="admin-card">
+                            <i class="fas fa-shopping-bag"></i>
+                            <h4>Gerenciar Pedidos</h4>
+                            <p>Visualizar e gerenciar todos os pedidos</p>
+                            <button class="btn-primary" disabled>Em breve</button>
+                        </div>
+                        <div class="admin-card">
+                            <i class="fas fa-chart-bar"></i>
+                            <h4>Relatórios</h4>
+                            <p>Relatórios de vendas e performance</p>
+                            <button class="btn-primary" disabled>Em breve</button>
+                        </div>
                     </div>
                 </div>
 

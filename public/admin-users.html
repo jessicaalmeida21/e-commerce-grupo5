@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Usuários - E2E Commerce</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Cabeçalho -->
+    <header>
+        <div class="header-main">
+            <div class="container">
+                <div class="header-main-content">
+                    <div class="logo">
+                        <a href="index.html">
+                            <img src="https://http2.mlstatic.com/storage/logos-api-admin/a5f047d0-9be0-11ec-aad4-c2181f3a5f8a-m.svg" alt="E2E Commerce" style="height: 34px;">
+                        </a>
+                    </div>
+                    <div class="header-actions">
+                        <div class="user-menu" id="user-menu">
+                            <span class="user-name" id="user-name"></span>
+                            <div class="user-dropdown">
+                                <button class="user-toggle" id="user-toggle">
+                                    <i class="fas fa-user-circle"></i>
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div class="dropdown-menu" id="dropdown-menu">
+                                    <a href="dashboard.html">Dashboard</a>
+                                    <a href="#" onclick="logout()">Sair</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="admin-main">
+        <div class="container">
+            <div class="admin-header">
+                <h1><i class="fas fa-users"></i> Gerenciar Usuários</h1>
+                <button class="btn-primary" id="add-user-btn">
+                    <i class="fas fa-plus"></i> Novo Usuário
+                </button>
+            </div>
+
+            <!-- Filtros -->
+            <div class="filters-section">
+                <div class="filter-group">
+                    <label for="role-filter">Filtrar por perfil:</label>
+                    <select id="role-filter">
+                        <option value="">Todos</option>
+                        <option value="client">Cliente</option>
+                        <option value="supplier">Fornecedor</option>
+                        <option value="operator">Operador</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="search-input">Buscar:</label>
+                    <input type="text" id="search-input" placeholder="Nome ou email...">
+                </div>
+            </div>
+
+            <!-- Lista de Usuários -->
+            <div class="users-table-container">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome</th>
+                            <th>Email</th>
+                            <th>Perfil</th>
+                            <th>Telefone</th>
+                            <th>Status</th>
+                            <th>Cadastrado em</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody">
+                        <!-- Usuários serão carregados aqui -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação -->
+            <div class="pagination" id="pagination">
+                <!-- Paginação será gerada aqui -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de Novo/Editar Usuário -->
+    <div class="modal" id="user-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Novo Usuário</h2>
+                <button class="close-btn" id="close-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="user-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="user-firstName">Nome *</label>
+                        <input type="text" id="user-firstName" name="firstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="user-lastName">Sobrenome *</label>
+                        <input type="text" id="user-lastName" name="lastName" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="user-email">Email *</label>
+                    <input type="email" id="user-email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="user-phone">Telefone</label>
+                    <input type="tel" id="user-phone" name="phone" placeholder="(11) 99999-9999">
+                </div>
+                
+                <div class="form-group">
+                    <label for="user-role">Perfil *</label>
+                    <select id="user-role" name="role" required>
+                        <option value="">Selecione o perfil</option>
+                        <option value="client">Cliente</option>
+                        <option value="supplier">Fornecedor</option>
+                        <option value="operator">Operador</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="user-password">Senha *</label>
+                    <input type="password" id="user-password" name="password" required>
+                    <div class="password-strength">
+                        <div class="strength-bar">
+                            <div class="strength-fill" id="user-strength-fill"></div>
+                        </div>
+                        <span class="strength-text" id="user-strength-text">Digite uma senha</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="user-confirmPassword">Confirmar Senha *</label>
+                    <input type="password" id="user-confirmPassword" name="confirmPassword" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancel-user">Cancelar</button>
+                    <button type="submit" class="btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação de Exclusão -->
+    <div class="modal" id="delete-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Confirmar Exclusão</h2>
+                <button class="close-btn" id="close-delete-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="delete-message">Tem certeza que deseja excluir este usuário?</p>
+                <p class="warning-text">Esta ação não pode ser desfeita.</p>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" id="cancel-delete">Cancelar</button>
+                <button type="button" class="btn-danger" id="confirm-delete">Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="auth.js"></script>
+    <script src="admin-users.js"></script>
+</body>
+</html>

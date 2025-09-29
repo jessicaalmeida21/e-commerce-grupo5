@@ -1,4 +1,5 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const router = express.Router();
 
@@ -26,9 +27,19 @@ const authenticateToken = (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'e2e-commerce-secret-key');
+        
+        // Verificar se o token não expirou (timeout de 30 minutos)
+        const now = Math.floor(Date.now() / 1000);
+        if (decoded.exp && decoded.exp < now) {
+            return res.status(401).json({ error: 'Sessão expirada. Faça login novamente.' });
+        }
+        
         req.user = decoded;
         next();
     } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ error: 'Sessão expirada. Faça login novamente.' });
+        }
         return res.status(403).json({ error: 'Token inválido' });
     }
 };
@@ -247,6 +258,83 @@ router.get('/users', authenticateToken, (req, res) => {
     res.json({ users: userList });
 });
 
+// GET /api/auth/users/:id - Obter usuário específico
+router.get('/users/:id', authenticateToken, (req, res) => {
+    const userId = parseInt(req.params.id);
+    const user = users.find(u => u.id === userId);
+
+    if (!user) {
+        return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    // Usuários só podem ver seus próprios dados, exceto admin
+    if (req.user.role !== 'admin' && req.user.id !== userId) {
+        return res.status(403).json({ error: 'Acesso negado' });
+    }
+
+    res.json({ user: user.toJSON() });
+});
+
+// PUT /api/auth/users/:id - Atualizar usuário
+router.put('/users/:id', authenticateToken, async (req, res) => {
+    try {
+        const userId = parseInt(req.params.id);
+        const user = users.find(u => u.id === userId);
+
+        if (!user) {
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+
+        // Usuários só podem editar seus próprios dados, exceto admin
+        if (req.user.role !== 'admin' && req.user.id !== userId) {
+            return res.status(403).json({ error: 'Acesso negado' });
+        }
+
+        const { name, email, phone, currentPassword, newPassword } = req.body;
+
+        // Verificar senha atual se fornecida
+        if (currentPassword) {
+            const isValidPassword = await user.checkPassword(currentPassword);
+            if (!isValidPassword) {
+                return res.status(400).json({ error: 'Senha atual incorreta' });
+            }
+        }
+
+        // Atualizar dados
+        if (name) user.name = name;
+        if (email) {
+            // Verificar se email já existe em outro usuário
+            const existingUser = users.find(u => u.email === email && u.id !== userId);
+            if (existingUser) {
+                return res.status(400).json({ error: 'Email já cadastrado' });
+            }
+            user.email = email;
+        }
+        if (phone) user.phone = phone;
+        if (newPassword) {
+            // Validar nova senha
+            if (!user.isValidPassword(newPassword)) {
+                return res.status(400).json({ 
+                    error: 'Nova senha deve ter pelo menos 10 caracteres com números, letras e caracteres especiais' 
+                });
+            }
+            user.password = newPassword;
+            await user.hashPassword();
+        }
+
+        user.updatedAt = new Date();
+
+        res.json({
+            message: 'Usuário atualizado com sucesso',
+            user: user.toJSON()
+        });
+
+    } catch (error) {
+        console.error('Erro na atualização:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
 // DELETE /api/auth/users/:id - Excluir usuário (apenas admin)
 router.delete('/users/:id', authenticateToken, async (req, res) => {
     if (req.user.role !== 'admin') {
@@ -263,6 +351,18 @@ router.delete('/users/:id', authenticateToken, async (req, res) => {
     // Não permitir auto-exclusão
     if (userId === req.user.id) {
         return res.status(400).json({ error: 'Não é possível excluir seu próprio usuário' });
+    }
+
+    const user = users[userIndex];
+    
+    // Verificar se é confirmação de exclusão
+    const { confirm } = req.body;
+    if (!confirm) {
+        return res.status(400).json({ 
+            error: 'Confirmação necessária',
+            message: `Tem certeza que deseja excluir o usuário ${user.name}? Esta ação não pode ser desfeita.`,
+            requiresConfirmation: true
+        });
     }
 
     users.splice(userIndex, 1);

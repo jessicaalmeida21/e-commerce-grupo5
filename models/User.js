@@ -34,7 +34,7 @@ class User {
                 role: this.role 
             },
             process.env.JWT_SECRET || 'e2e-commerce-secret-key',
-            { expiresIn: '24h' }
+            { expiresIn: '30m' } // 30 minutos de sessão
         );
     }
 
@@ -48,6 +48,18 @@ class User {
 
         if (!this.email || !this.isValidEmail(this.email)) {
             errors.push('Email inválido');
+        }
+
+        if (!this.password || this.password.length < 10) {
+            errors.push('Senha deve ter pelo menos 10 caracteres');
+        }
+
+        if (!this.isValidPassword(this.password)) {
+            errors.push('Senha deve conter números, letras e caracteres especiais');
+        }
+
+        if (!this.role || !['client', 'supplier', 'admin', 'operator'].includes(this.role)) {
+            errors.push('Perfil inválido');
         }
 
         if (!this.password || !this.isValidPassword(this.password)) {
@@ -70,12 +82,17 @@ class User {
         return emailRegex.test(email);
     }
 
-    // Validar senha
+    // Validar senha (mínimo 10 caracteres, números, letras e caracteres especiais)
     isValidPassword(password) {
-        // Mínimo 10 caracteres, com números, letras e caracteres especiais
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10,}$/;
-        return passwordRegex.test(password);
+        if (password.length < 10) return false;
+        
+        const hasNumber = /\d/.test(password);
+        const hasLetter = /[a-zA-Z]/.test(password);
+        const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+        
+        return hasNumber && hasLetter && hasSpecialChar;
     }
+
 
     // Retornar dados sem senha
     toJSON() {

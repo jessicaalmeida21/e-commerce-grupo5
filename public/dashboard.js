@@ -31,6 +31,15 @@ function initializeDashboard() {
         }
     }
 
+    const adminTab = document.getElementById('admin-tab');
+    if (adminTab) {
+        if (user.role === 'admin') {
+            adminTab.style.display = 'block';
+        } else {
+            adminTab.style.display = 'none';
+        }
+    }
+
     // Carregar dados do perfil
     loadProfileData();
 }

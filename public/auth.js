@@ -144,21 +144,29 @@ class AuthSystem {
         let score = 0;
         let feedback = [];
 
-        if (password.length >= 8) score += 25;
-        else feedback.push('pelo menos 8 caracteres');
+        // Mínimo 10 caracteres
+        if (password.length >= 10) score += 20;
+        else feedback.push('pelo menos 10 caracteres');
 
-        if (/[a-z]/.test(password)) score += 25;
+        // Letras minúsculas
+        if (/[a-z]/.test(password)) score += 20;
         else feedback.push('letras minúsculas');
 
-        if (/[A-Z]/.test(password)) score += 25;
+        // Letras maiúsculas
+        if (/[A-Z]/.test(password)) score += 20;
         else feedback.push('letras maiúsculas');
 
-        if (/[0-9]/.test(password)) score += 25;
+        // Números
+        if (/[0-9]/.test(password)) score += 20;
         else feedback.push('números');
 
-        if (score < 50) {
-            return { percentage: score, level: 'weak', text: 'Senha fraca' };
-        } else if (score < 75) {
+        // Caracteres especiais
+        if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) score += 20;
+        else feedback.push('caracteres especiais');
+
+        if (score < 60) {
+            return { percentage: score, level: 'weak', text: 'Senha fraca - ' + feedback.join(', ') };
+        } else if (score < 80) {
             return { percentage: score, level: 'medium', text: 'Senha média' };
         } else {
             return { percentage: score, level: 'strong', text: 'Senha forte' };
@@ -166,7 +174,11 @@ class AuthSystem {
     }
 
     isPasswordStrong(password) {
-        return password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /[0-9]/.test(password);
+        return password.length >= 10 && 
+               /[a-z]/.test(password) && 
+               /[A-Z]/.test(password) && 
+               /[0-9]/.test(password) && 
+               /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
     }
 
     checkPasswordMatch() {
