@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finalizar Compra - E2E Commerce</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Cabeçalho (Mercado Livre Style) -->
+    <header>
+        <!-- Barra superior -->
+        <div class="header-top">
+            <div class="container">
+                <div class="header-top-content">
+                    <div class="location-info">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Enviar para São Paulo</span>
+                    </div>
+                    <div class="top-links">
+                        <a href="#">Ofertas do dia</a>
+                        <a href="#">Histórico</a>
+                        <a href="#">Supermercado</a>
+                        <a href="#">Moda</a>
+                        <a href="#">Vender</a>
+                        <a href="#">Contato</a>
+                    </div>
+                    <div class="user-account" id="user-account">
+                        <div class="auth-links" id="auth-links">
+                            <a href="login.html">Entrar</a>
+                            <a href="cadastro.html">Cadastrar</a>
+                        </div>
+                        <div class="user-menu" id="user-menu" style="display: none;">
+                            <span class="user-name" id="user-name"></span>
+                            <div class="user-dropdown">
+                                <button class="user-toggle" id="user-toggle">
+                                    <i class="fas fa-user-circle"></i>
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div class="dropdown-menu" id="dropdown-menu">
+                                    <a href="#" id="dashboard-link">Minha conta</a>
+                                    <a href="#">Compras</a>
+                                    <a href="#">Favoritos</a>
+                                    <a href="#" onclick="logout()">Sair</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra principal -->
+        <div class="header-main">
+            <div class="container">
+                <div class="header-main-content">
+                    <div class="logo">
+                        <a href="index.html">
+                            <img src="https://http2.mlstatic.com/storage/logos-api-admin/a5f047d0-9be0-11ec-aad4-c2181f3a5f8a-m.svg" alt="E2E Commerce" style="height: 34px;">
+                        </a>
+                    </div>
+                    
+                    <div class="search-container">
+                        <div class="search-box">
+                            <input type="text" placeholder="Buscar produtos, marcas e mais..." id="main-search">
+                            <button type="submit" id="search-btn">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="header-actions">
+                        <div class="cart-icon">
+                            <a href="carrinho.html" id="cart-toggle">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span class="cart-count" id="cart-count">0</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="checkout-main">
+        <div class="container">
+            <div class="checkout-header">
+                <h1><i class="fas fa-credit-card"></i> Finalizar Compra</h1>
+                <div class="checkout-steps">
+                    <div class="step active" data-step="1">
+                        <span class="step-number">1</span>
+                        <span class="step-label">Endereço</span>
+                    </div>
+                    <div class="step" data-step="2">
+                        <span class="step-number">2</span>
+                        <span class="step-label">Pagamento</span>
+                    </div>
+                    <div class="step" data-step="3">
+                        <span class="step-number">3</span>
+                        <span class="step-label">Confirmação</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="checkout-content">
+                <!-- Resumo do Pedido -->
+                <div class="order-summary">
+                    <h3>Resumo do Pedido</h3>
+                    <div id="order-items" class="order-items">
+                        <!-- Itens serão carregados aqui -->
+                    </div>
+                    <div class="order-total">
+                        <div class="total-row">
+                            <span>Subtotal:</span>
+                            <span id="subtotal">R$ 0,00</span>
+                        </div>
+                        <div class="total-row">
+                            <span>Frete:</span>
+                            <span id="shipping">R$ 0,00</span>
+                        </div>
+                        <div class="total-row final">
+                            <span>Total:</span>
+                            <span id="total">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulário de Checkout -->
+                <div class="checkout-form">
+                    <!-- Passo 1: Endereço -->
+                    <div id="step-1" class="checkout-step active">
+                        <h3>Endereço de Entrega</h3>
+                        
+                        <!-- Endereços existentes -->
+                        <div class="existing-addresses">
+                            <h4>Seus Endereços</h4>
+                            <div id="addresses-list" class="addresses-list">
+                                <!-- Endereços serão carregados aqui -->
+                            </div>
+                            <button class="btn-secondary" id="add-address-btn">
+                                <i class="fas fa-plus"></i> Adicionar Novo Endereço
+                            </button>
+                        </div>
+
+                        <!-- Formulário de novo endereço -->
+                        <div id="new-address-form" class="new-address-form" style="display: none;">
+                            <h4>Novo Endereço</h4>
+                            <form id="address-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="address-type">Tipo de Endereço</label>
+                                        <select id="address-type" required>
+                                            <option value="residential">Residencial</option>
+                                            <option value="commercial">Comercial</option>
+                                            <option value="delivery">Entrega</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="cep">CEP</label>
+                                        <input type="text" id="cep" placeholder="00000-000" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="street">Rua</label>
+                                    <input type="text" id="street" required>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="number">Número</label>
+                                        <input type="text" id="number" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="complement">Complemento</label>
+                                        <input type="text" id="complement">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="neighborhood">Bairro</label>
+                                        <input type="text" id="neighborhood" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="city">Cidade</label>
+                                        <input type="text" id="city" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="state">Estado</label>
+                                        <input type="text" id="state" maxlength="2" required>
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" class="btn-secondary" id="cancel-address-btn">Cancelar</button>
+                                    <button type="submit" class="btn-primary">Salvar Endereço</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="step-actions">
+                            <button class="btn-primary" id="next-step-1" disabled>
+                                Continuar <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Passo 2: Pagamento -->
+                    <div id="step-2" class="checkout-step">
+                        <h3>Forma de Pagamento</h3>
+                        <div class="payment-methods">
+                            <div class="payment-option">
+                                <input type="radio" id="credit-card" name="payment" value="credit-card">
+                                <label for="credit-card">
+                                    <i class="fas fa-credit-card"></i>
+                                    Cartão de Crédito
+                                </label>
+                            </div>
+                            <div class="payment-option">
+                                <input type="radio" id="pix" name="payment" value="pix">
+                                <label for="pix">
+                                    <i class="fas fa-qrcode"></i>
+                                    PIX
+                                </label>
+                            </div>
+                        </div>
+                        <div class="step-actions">
+                            <button class="btn-secondary" id="prev-step-2">
+                                <i class="fas fa-arrow-left"></i> Voltar
+                            </button>
+                            <button class="btn-primary" id="next-step-2" disabled>
+                                Continuar <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Passo 3: Confirmação -->
+                    <div id="step-3" class="checkout-step">
+                        <h3>Confirmação do Pedido</h3>
+                        <div class="confirmation-content">
+                            <div class="confirmation-address">
+                                <h4>Endereço de Entrega</h4>
+                                <p id="selected-address"></p>
+                            </div>
+                            <div class="confirmation-payment">
+                                <h4>Forma de Pagamento</h4>
+                                <p id="selected-payment"></p>
+                            </div>
+                            <div class="confirmation-total">
+                                <h4>Total do Pedido</h4>
+                                <p id="confirmation-total"></p>
+                            </div>
+                        </div>
+                        <div class="step-actions">
+                            <button class="btn-secondary" id="prev-step-3">
+                                <i class="fas fa-arrow-left"></i> Voltar
+                            </button>
+                            <button class="btn-primary" id="confirm-order">
+                                <i class="fas fa-check"></i> Confirmar Pedido
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="notification-container"></div>
+
+    <script src="script.js"></script>
+    <script src="auth.js"></script>
+    <script src="checkout.js"></script>
+</body>
+</html>

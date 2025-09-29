@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus Pedidos - E2E Commerce</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Cabeçalho (Mercado Livre Style) -->
+    <header>
+        <!-- Barra superior -->
+        <div class="header-top">
+            <div class="container">
+                <div class="header-top-content">
+                    <div class="location-info">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Enviar para São Paulo</span>
+                    </div>
+                    <div class="top-links">
+                        <a href="#">Ofertas do dia</a>
+                        <a href="#">Histórico</a>
+                        <a href="#">Supermercado</a>
+                        <a href="#">Moda</a>
+                        <a href="#">Vender</a>
+                        <a href="#">Contato</a>
+                    </div>
+                    <div class="user-account" id="user-account">
+                        <div class="auth-links" id="auth-links">
+                            <a href="login.html">Entrar</a>
+                            <a href="cadastro.html">Cadastrar</a>
+                        </div>
+                        <div class="user-menu" id="user-menu" style="display: none;">
+                            <span class="user-name" id="user-name"></span>
+                            <div class="user-dropdown">
+                                <button class="user-toggle" id="user-toggle">
+                                    <i class="fas fa-user-circle"></i>
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div class="dropdown-menu" id="dropdown-menu">
+                                    <a href="#" id="dashboard-link">Minha conta</a>
+                                    <a href="pedidos.html">Compras</a>
+                                    <a href="#">Favoritos</a>
+                                    <a href="#" onclick="logout()">Sair</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra principal -->
+        <div class="header-main">
+            <div class="container">
+                <div class="header-main-content">
+                    <div class="logo">
+                        <a href="index.html">
+                            <img src="https://http2.mlstatic.com/storage/logos-api-admin/a5f047d0-9be0-11ec-aad4-c2181f3a5f8a-m.svg" alt="E2E Commerce" style="height: 34px;">
+                        </a>
+                    </div>
+                    
+                    <div class="search-container">
+                        <div class="search-box">
+                            <input type="text" placeholder="Buscar produtos, marcas e mais..." id="main-search">
+                            <button type="submit" id="search-btn">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="header-actions">
+                        <div class="cart-icon">
+                            <a href="carrinho.html" id="cart-toggle">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span class="cart-count" id="cart-count">0</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="orders-main">
+        <div class="container">
+            <div class="orders-header">
+                <h1><i class="fas fa-shopping-bag"></i> Meus Pedidos</h1>
+                <p>Acompanhe seus pedidos e histórico de compras</p>
+            </div>
+
+            <!-- Filtros -->
+            <div class="orders-filters">
+                <div class="filter-group">
+                    <label for="status-filter">Filtrar por Status</label>
+                    <select id="status-filter">
+                        <option value="">Todos os status</option>
+                        <option value="pending">Aguardando Pagamento</option>
+                        <option value="paid">Pago</option>
+                        <option value="shipped">Em Transporte</option>
+                        <option value="delivered">Entregue</option>
+                        <option value="cancelled">Cancelado</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="date-filter">Período</label>
+                    <select id="date-filter">
+                        <option value="">Todos os períodos</option>
+                        <option value="7">Últimos 7 dias</option>
+                        <option value="30">Últimos 30 dias</option>
+                        <option value="90">Últimos 3 meses</option>
+                    </select>
+                </div>
+                <button class="btn-primary" id="apply-filters-btn">Aplicar Filtros</button>
+            </div>
+
+            <!-- Lista de Pedidos -->
+            <div class="orders-list" id="orders-list">
+                <!-- Pedidos serão carregados aqui -->
+            </div>
+
+            <!-- Pedido vazio -->
+            <div id="empty-orders" class="empty-orders" style="display: none;">
+                <div class="empty-orders-content">
+                    <i class="fas fa-shopping-bag"></i>
+                    <h2>Nenhum pedido encontrado</h2>
+                    <p>Você ainda não fez nenhuma compra</p>
+                    <a href="index.html" class="btn-primary">Começar a Comprar</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de Detalhes do Pedido -->
+    <div id="order-detail-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Detalhes do Pedido</h2>
+                <button class="close-btn" id="close-order-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="order-details-content">
+                    <!-- Detalhes serão carregados aqui -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Cancelamento -->
+    <div id="cancel-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Cancelar Pedido</h2>
+                <button class="close-btn" id="close-cancel-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Informe o motivo do cancelamento:</p>
+                <textarea id="cancel-reason" placeholder="Descreva o motivo do cancelamento..." rows="4" required></textarea>
+            </div>
+            <div class="form-actions">
+                <button class="btn-secondary" id="cancel-cancel-btn">Cancelar</button>
+                <button class="btn-danger" id="confirm-cancel-btn">Confirmar Cancelamento</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification-container"></div>
+
+    <script src="script.js"></script>
+    <script src="auth.js"></script>
+    <script src="orders.js"></script>
+</body>
+</html>

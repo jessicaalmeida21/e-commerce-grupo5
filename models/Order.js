@@ -1,43 +1,51 @@
 class Order {
-    constructor(id, clientId, status, paymentStatus, logisticStatus, total, shippingAddress, items = [], createdAt = null, updatedAt = null) {
+    constructor(id, userId, items, totalAmount, status = 'pending', shippingAddress = null, createdAt = null, updatedAt = null) {
         this.id = id;
-        this.clientId = clientId;
-        this.status = status; // 'pending', 'confirmed', 'cancelled', 'delivered'
-        this.paymentStatus = paymentStatus; // 'pending', 'paid', 'failed', 'refunded'
-        this.logisticStatus = logisticStatus; // 'awaiting_shipment', 'in_transit', 'delivered'
-        this.total = total;
+        this.userId = userId;
+        this.items = items; // Array de {productId, productName, quantity, price, subtotal}
+        this.totalAmount = totalAmount;
+        this.status = status; // 'pending', 'paid', 'shipped', 'delivered', 'cancelled'
         this.shippingAddress = shippingAddress;
-        this.items = items; // Array de OrderItem
         this.createdAt = createdAt || new Date();
         this.updatedAt = updatedAt || new Date();
+        this.cancellationReason = null;
+        this.cancelledAt = null;
+        this.deliveredAt = null;
+        this.returnDeadline = null;
     }
 
     // Validar dados do pedido
     validate() {
         const errors = [];
 
-        if (!this.clientId) {
-            errors.push('Cliente é obrigatório');
+        if (!this.userId) {
+            errors.push('ID do usuário é obrigatório');
         }
 
         if (!this.items || this.items.length === 0) {
-            errors.push('Pedido deve ter pelo menos um item');
+            errors.push('Pedido deve conter pelo menos um produto');
+        }
+
+        if (this.totalAmount <= 0) {
+            errors.push('Valor total deve ser maior que zero');
         }
 
         if (!this.shippingAddress) {
             errors.push('Endereço de entrega é obrigatório');
         }
 
-        if (this.total <= 0) {
-            errors.push('Valor total deve ser maior que zero');
-        }
-
         // Validar itens
-        for (const item of this.items) {
-            if (!item.productId || !item.quantity || item.quantity <= 0) {
-                errors.push('Item inválido: produto e quantidade são obrigatórios');
+        this.items.forEach((item, index) => {
+            if (!item.productId) {
+                errors.push(`Item ${index + 1}: ID do produto é obrigatório`);
             }
-        }
+            if (!item.quantity || item.quantity <= 0) {
+                errors.push(`Item ${index + 1}: Quantidade deve ser maior que zero`);
+            }
+            if (!item.price || item.price <= 0) {
+                errors.push(`Item ${index + 1}: Preço deve ser maior que zero`);
+            }
+        });
 
         return {
             isValid: errors.length === 0,
@@ -47,67 +55,88 @@ class Order {
 
     // Atualizar status do pedido
     updateStatus(newStatus) {
-        const validStatuses = ['pending', 'confirmed', 'cancelled', 'delivered'];
-        if (validStatuses.includes(newStatus)) {
-            this.status = newStatus;
-            this.updatedAt = new Date();
-            return true;
+        const validTransitions = {
+            'pending': ['paid', 'cancelled'],
+            'paid': ['shipped', 'cancelled'],
+            'shipped': ['delivered'],
+            'delivered': ['returned'],
+            'cancelled': [],
+            'returned': []
+        };
+
+        if (!validTransitions[this.status].includes(newStatus)) {
+            throw new Error(`Transição de status inválida: ${this.status} → ${newStatus}`);
         }
-        return false;
+
+        this.status = newStatus;
+        this.updatedAt = new Date();
+
+        // Definir data de entrega quando status for 'delivered'
+        if (newStatus === 'delivered') {
+            this.deliveredAt = new Date();
+            this.returnDeadline = new Date();
+            this.returnDeadline.setDate(this.returnDeadline.getDate() + 7); // 7 dias para devolução
+        }
     }
 
-    // Atualizar status de pagamento
-    updatePaymentStatus(newStatus) {
-        const validStatuses = ['pending', 'paid', 'failed', 'refunded'];
-        if (validStatuses.includes(newStatus)) {
-            this.paymentStatus = newStatus;
-            this.updatedAt = new Date();
-            return true;
+    // Cancelar pedido
+    cancel(reason) {
+        if (!['pending', 'paid'].includes(this.status)) {
+            throw new Error('Pedido não pode ser cancelado neste status');
         }
-        return false;
-    }
 
-    // Atualizar status logístico
-    updateLogisticStatus(newStatus) {
-        const validStatuses = ['awaiting_shipment', 'in_transit', 'delivered'];
-        if (validStatuses.includes(newStatus)) {
-            this.logisticStatus = newStatus;
-            this.updatedAt = new Date();
-            return true;
+        if (!reason || reason.trim().length < 10) {
+            throw new Error('Motivo do cancelamento deve ter pelo menos 10 caracteres');
         }
-        return false;
-    }
 
-    // Calcular total do pedido
-    calculateTotal() {
-        this.total = this.items.reduce((sum, item) => {
-            return sum + (item.price * item.quantity);
-        }, 0);
-        return this.total;
+        this.status = 'cancelled';
+        this.cancellationReason = reason;
+        this.cancelledAt = new Date();
+        this.updatedAt = new Date();
     }
 
     // Verificar se pode ser cancelado
     canBeCancelled() {
-        return this.status === 'pending' && this.paymentStatus === 'pending';
+        return ['pending', 'paid'].includes(this.status);
     }
 
     // Verificar se pode ser devolvido
     canBeReturned() {
-        const deliveredDate = new Date(this.updatedAt);
+        if (this.status !== 'delivered' || !this.deliveredAt) {
+            return false;
+        }
+
         const now = new Date();
-        const daysDiff = Math.floor((now - deliveredDate) / (1000 * 60 * 60 * 24));
+        const daysSinceDelivery = Math.floor((now - this.deliveredAt) / (1000 * 60 * 60 * 24));
         
-        return this.status === 'delivered' && daysDiff <= 7;
+        return daysSinceDelivery <= 7; // 7 dias para devolução
+    }
+
+    // Calcular total do pedido
+    calculateTotal() {
+        this.totalAmount = this.items.reduce((total, item) => {
+            return total + (item.price * item.quantity);
+        }, 0);
+        return this.totalAmount;
     }
 
     // Adicionar item ao pedido
-    addItem(item) {
-        const existingItem = this.items.find(i => i.productId === item.productId);
+    addItem(productId, productName, quantity, price) {
+        const existingItem = this.items.find(item => item.productId === productId);
+        
         if (existingItem) {
-            existingItem.quantity += item.quantity;
+            existingItem.quantity += quantity;
+            existingItem.subtotal = existingItem.quantity * existingItem.price;
         } else {
-            this.items.push(item);
+            this.items.push({
+                productId,
+                productName,
+                quantity,
+                price,
+                subtotal: quantity * price
+            });
         }
+        
         this.calculateTotal();
     }
 
@@ -117,64 +146,67 @@ class Order {
         this.calculateTotal();
     }
 
-    // Retornar dados para API
+    // Atualizar quantidade de item
+    updateItemQuantity(productId, quantity) {
+        const item = this.items.find(item => item.productId === productId);
+        if (item) {
+            if (quantity <= 0) {
+                this.removeItem(productId);
+            } else {
+                item.quantity = quantity;
+                item.subtotal = item.quantity * item.price;
+                this.calculateTotal();
+            }
+        }
+    }
+
+    // Obter status em português
+    getStatusLabel() {
+        const statusLabels = {
+            'pending': 'Aguardando Pagamento',
+            'paid': 'Pago',
+            'shipped': 'Em Transporte',
+            'delivered': 'Entregue',
+            'cancelled': 'Cancelado',
+            'returned': 'Devolvido'
+        };
+        return statusLabels[this.status] || this.status;
+    }
+
+    // Obter cor do status
+    getStatusColor() {
+        const statusColors = {
+            'pending': '#ff9800',
+            'paid': '#4caf50',
+            'shipped': '#2196f3',
+            'delivered': '#8bc34a',
+            'cancelled': '#f44336',
+            'returned': '#9c27b0'
+        };
+        return statusColors[this.status] || '#666';
+    }
+
+    // Retornar dados sem informações sensíveis
     toJSON() {
         return {
             id: this.id,
-            clientId: this.clientId,
-            status: this.status,
-            paymentStatus: this.paymentStatus,
-            logisticStatus: this.logisticStatus,
-            total: this.total,
-            shippingAddress: this.shippingAddress,
+            userId: this.userId,
             items: this.items,
+            totalAmount: this.totalAmount,
+            status: this.status,
+            statusLabel: this.getStatusLabel(),
+            statusColor: this.getStatusColor(),
+            shippingAddress: this.shippingAddress,
             createdAt: this.createdAt,
-            updatedAt: this.updatedAt
-        };
-    }
-
-    // Criar pedido a partir de dados do banco
-    static fromDatabase(row) {
-        return new Order(
-            row.id,
-            row.client_id,
-            row.status,
-            row.payment_status,
-            row.logistic_status,
-            row.total,
-            JSON.parse(row.shipping_address || '{}'),
-            JSON.parse(row.items || '[]'),
-            row.created_at,
-            row.updated_at
-        );
-    }
-}
-
-// Classe para itens do pedido
-class OrderItem {
-    constructor(productId, name, price, quantity, imageUrl = null) {
-        this.productId = productId;
-        this.name = name;
-        this.price = price;
-        this.quantity = quantity;
-        this.imageUrl = imageUrl;
-    }
-
-    // Calcular subtotal do item
-    getSubtotal() {
-        return this.price * this.quantity;
-    }
-
-    toJSON() {
-        return {
-            productId: this.productId,
-            name: this.name,
-            price: this.price,
-            quantity: this.quantity,
-            imageUrl: this.imageUrl,
-            subtotal: this.getSubtotal()
+            updatedAt: this.updatedAt,
+            cancellationReason: this.cancellationReason,
+            cancelledAt: this.cancelledAt,
+            deliveredAt: this.deliveredAt,
+            returnDeadline: this.returnDeadline,
+            canBeCancelled: this.canBeCancelled(),
+            canBeReturned: this.canBeReturned()
         };
     }
 }
 
-module.exports = { Order, OrderItem };
+module.exports = Order;

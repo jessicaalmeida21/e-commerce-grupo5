@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrinho de Compras - E2E Commerce</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Cabeçalho (Mercado Livre Style) -->
+    <header>
+        <!-- Barra superior -->
+        <div class="header-top">
+            <div class="container">
+                <div class="header-top-content">
+                    <div class="location-info">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Enviar para São Paulo</span>
+                    </div>
+                    <div class="top-links">
+                        <a href="#">Ofertas do dia</a>
+                        <a href="#">Histórico</a>
+                        <a href="#">Supermercado</a>
+                        <a href="#">Moda</a>
+                        <a href="#">Vender</a>
+                        <a href="#">Contato</a>
+                    </div>
+                    <div class="user-account" id="user-account">
+                        <div class="auth-links" id="auth-links">
+                            <a href="login.html">Entrar</a>
+                            <a href="cadastro.html">Cadastrar</a>
+                        </div>
+                        <div class="user-menu" id="user-menu" style="display: none;">
+                            <span class="user-name" id="user-name"></span>
+                            <div class="user-dropdown">
+                                <button class="user-toggle" id="user-toggle">
+                                    <i class="fas fa-user-circle"></i>
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div class="dropdown-menu" id="dropdown-menu">
+                                    <a href="#" id="dashboard-link">Minha conta</a>
+                                    <a href="#">Compras</a>
+                                    <a href="#">Favoritos</a>
+                                    <a href="#" onclick="logout()">Sair</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra principal -->
+        <div class="header-main">
+            <div class="container">
+                <div class="header-main-content">
+                    <div class="logo">
+                        <a href="index.html">
+                            <img src="https://http2.mlstatic.com/storage/logos-api-admin/a5f047d0-9be0-11ec-aad4-c2181f3a5f8a-m.svg" alt="E2E Commerce" style="height: 34px;">
+                        </a>
+                    </div>
+                    
+                    <div class="search-container">
+                        <div class="search-box">
+                            <input type="text" placeholder="Buscar produtos, marcas e mais..." id="main-search">
+                            <button type="submit" id="search-btn">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="header-actions">
+                        <div class="cart-icon">
+                            <a href="carrinho.html" id="cart-toggle">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span class="cart-count" id="cart-count">0</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="cart-main">
+        <div class="container">
+            <div class="cart-header">
+                <h1><i class="fas fa-shopping-cart"></i> Carrinho de Compras</h1>
+                <p id="cart-summary">0 itens no carrinho</p>
+            </div>
+
+            <div class="cart-content">
+                <!-- Carrinho vazio -->
+                <div id="empty-cart" class="empty-cart" style="display: none;">
+                    <div class="empty-cart-content">
+                        <i class="fas fa-shopping-cart"></i>
+                        <h2>Seu carrinho está vazio</h2>
+                        <p>Que tal adicionar alguns produtos?</p>
+                        <a href="index.html" class="btn-primary">Continuar Comprando</a>
+                    </div>
+                </div>
+
+                <!-- Itens do carrinho -->
+                <div id="cart-items" class="cart-items">
+                    <div class="cart-items-header">
+                        <h3>Produtos no Carrinho</h3>
+                        <button class="btn-secondary" id="clear-cart-btn" style="display: none;">
+                            <i class="fas fa-trash"></i> Limpar Carrinho
+                        </button>
+                    </div>
+                    <div id="cart-items-list" class="cart-items-list">
+                        <!-- Itens serão carregados aqui -->
+                    </div>
+                </div>
+
+                <!-- Resumo do pedido -->
+                <div id="cart-summary-section" class="cart-summary" style="display: none;">
+                    <div class="summary-header">
+                        <h3>Resumo do Pedido</h3>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-row">
+                            <span>Subtotal:</span>
+                            <span id="subtotal">R$ 0,00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Frete:</span>
+                            <span id="shipping">R$ 0,00</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Total:</span>
+                            <span id="total">R$ 0,00</span>
+                        </div>
+                    </div>
+                    <div class="summary-actions">
+                        <button class="btn-primary btn-full" id="checkout-btn">
+                            <i class="fas fa-credit-card"></i> Finalizar Compra
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de Confirmação -->
+    <div id="confirmation-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Confirmar Ação</h2>
+                <button class="close-btn" id="close-confirmation-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmation-message"></p>
+            </div>
+            <div class="form-actions">
+                <button class="btn-secondary" id="cancel-confirmation-btn">Cancelar</button>
+                <button class="btn-primary" id="confirm-action-btn">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification-container"></div>
+
+    <script src="script.js"></script>
+    <script src="auth.js"></script>
+    <script src="cart.js"></script>
+</body>
+</html>

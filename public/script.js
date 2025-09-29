@@ -187,29 +187,36 @@ function generateStars(rating) {
 }
 
 // Adicionar produto ao carrinho
-function addToCart(productId, productName, price, imageUrl) {
-    const existingItem = cart.find(item => item.id === productId);
-    
-    if (existingItem) {
-        existingItem.quantity += 1;
-    } else {
-        cart.push({
-            id: productId,
-            name: productName,
-            price: price,
-            image: imageUrl,
-            quantity: 1
+async function addToCart(productId, productName, price, imageUrl) {
+    try {
+        const user = getCurrentUser();
+        if (!user) {
+            alert('Você precisa estar logado para adicionar produtos ao carrinho.');
+            window.location.href = 'login.html';
+            return;
+        }
+
+        const response = await fetch('/api/cart/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({ productId, quantity: 1 })
         });
+
+        if (response.ok) {
+            const data = await response.json();
+            showNotification('Produto adicionado ao carrinho!', 'success');
+            updateCartCount();
+        } else {
+            const error = await response.json();
+            showNotification(error.error || 'Erro ao adicionar produto', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao adicionar ao carrinho:', error);
+        showNotification('Erro de conexão', 'error');
     }
-    
-    // Salvar no localStorage
-    localStorage.setItem('cart', JSON.stringify(cart));
-    
-    // Atualizar UI
-    updateCartUI();
-    
-    // Feedback visual
-    showNotification(`${productName} adicionado ao carrinho!`);
 }
 
 // Atualizar UI do carrinho
@@ -222,6 +229,36 @@ function updateCartUI() {
     
     // Atualizar modal do carrinho
     updateCartModal();
+}
+
+// Atualizar contador do carrinho
+async function updateCartCount() {
+    const cartCount = document.getElementById('cart-count');
+    if (!cartCount) return;
+
+    try {
+        const user = getCurrentUser();
+        if (!user) {
+            cartCount.textContent = '0';
+            return;
+        }
+
+        const response = await fetch('/api/cart', {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            cartCount.textContent = data.itemCount;
+        } else {
+            cartCount.textContent = '0';
+        }
+    } catch (error) {
+        console.error('Erro ao atualizar contador do carrinho:', error);
+        cartCount.textContent = '0';
+    }
 }
 
 // Atualizar modal do carrinho
@@ -315,23 +352,15 @@ function closeCartModal() {
 
 // Finalizar compra
 function handleCheckout() {
-    if (cart.length === 0) {
-        showNotification('Carrinho vazio!', 'error');
+    const user = getCurrentUser();
+    if (!user) {
+        alert('Você precisa estar logado para finalizar a compra.');
+        window.location.href = 'login.html';
         return;
     }
     
-    // Simular processo de checkout
-    showNotification('Redirecionando para o checkout...', 'info');
-    
-    // Aqui você pode integrar com um sistema de pagamento real
-    setTimeout(() => {
-        // Simular sucesso do checkout
-        cart = [];
-        localStorage.removeItem('cart');
-        updateCartUI();
-        closeCartModal();
-        showNotification('Compra realizada com sucesso!', 'success');
-    }, 2000);
+    // Redirecionar para página de checkout
+    window.location.href = 'checkout.html';
 }
 
 // Configurar filtros (página de produtos)

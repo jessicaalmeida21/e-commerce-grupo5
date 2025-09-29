@@ -1,134 +1,156 @@
 const express = require('express');
-const { pool } = require('../config/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
-const { body, validationResult } = require('express-validator');
-
+const Order = require('../models/Order');
+const Address = require('../models/Address');
+const Product = require('../models/Product');
 const router = express.Router();
 
-// Validações
-const orderValidation = [
-    body('items').isArray({ min: 1 }).withMessage('Pedido deve ter pelo menos 1 item'),
-    body('items.*.product_id').isInt({ min: 1 }).withMessage('ID do produto inválido'),
-    body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantidade deve ser maior que zero'),
-    body('shipping_address').isObject().withMessage('Endereço de entrega é obrigatório'),
-    body('shipping_address.cep').isLength({ min: 8, max: 9 }).withMessage('CEP inválido'),
-    body('shipping_address.street').trim().isLength({ min: 3 }).withMessage('Rua é obrigatória'),
-    body('shipping_address.number').trim().notEmpty().withMessage('Número é obrigatório'),
-    body('shipping_address.city').trim().isLength({ min: 2 }).withMessage('Cidade é obrigatória'),
-    body('shipping_address.state').trim().isLength({ min: 2, max: 2 }).withMessage('Estado deve ter 2 caracteres')
-];
+// Mock de banco de dados em memória
+let orders = [];
+let addresses = [];
+let products = []; // Será preenchido com produtos existentes
 
-// Criar pedido
-router.post('/', authenticateToken, orderValidation, async (req, res) => {
+// Middleware de autenticação
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ error: 'Token de acesso necessário' });
+    }
+
     try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'e2e-commerce-secret-key');
+        req.user = decoded;
+        next();
+    } catch (error) {
+        return res.status(403).json({ error: 'Token inválido' });
+    }
+};
+
+// Inicializar produtos mock
+const initializeProducts = () => {
+    products = [
+        new Product(1, 'Smartphone Samsung Galaxy S21', 'Smartphone com tela de 6.2", câmera tripla de 64MP, 128GB de armazenamento', 'eletrônicos', 1299.99, 50, null, true, 100),
+        new Product(2, 'Notebook Dell Inspiron 15', 'Notebook com processador Intel i5, 8GB RAM, SSD 256GB, tela Full HD 15.6"', 'eletrônicos', 2499.99, 25, null, true, 50),
+        new Product(3, 'Camiseta Polo Masculina', 'Camiseta polo 100% algodão, disponível em várias cores e tamanhos', 'moda', 89.90, 100, null, true, 200),
+        new Product(4, 'Tênis Nike Air Max', 'Tênis esportivo com tecnologia Air Max, ideal para corrida e caminhada', 'esportes', 299.90, 75, null, true, 150),
+        new Product(5, 'Livro "O Poder do Hábito"', 'Livro de Charles Duhigg sobre como transformar hábitos e alcançar o sucesso', 'livros', 39.90, 30, null, true, 100)
+    ];
+};
+
+// Inicializar produtos
+initializeProducts();
+
+// GET /api/orders - Listar pedidos do usuário
+router.get('/', authenticateToken, (req, res) => {
+    try {
+        const userOrders = orders.filter(order => order.userId === req.user.id);
+        const ordersWithDetails = userOrders.map(order => order.toJSON());
+        
+        res.json({ orders: ordersWithDetails });
+    } catch (error) {
+        console.error('Erro ao listar pedidos:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// GET /api/orders/:id - Obter detalhes de um pedido
+router.get('/:id', authenticateToken, (req, res) => {
+    try {
+        const orderId = parseInt(req.params.id);
+        const order = orders.find(o => o.id === orderId && o.userId === req.user.id);
+
+        if (!order) {
+            return res.status(404).json({ error: 'Pedido não encontrado' });
         }
 
-        const { items, shipping_address } = req.body;
-        const userId = req.user.id;
+        res.json({ order: order.toJSON() });
+    } catch (error) {
+        console.error('Erro ao obter pedido:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
 
-        // Verificar se produtos existem e têm estoque
-        const productIds = items.map(item => item.product_id);
-        const [products] = await pool.execute(`
-            SELECT id, title, price, stock_quantity, is_active 
-            FROM products 
-            WHERE id IN (${productIds.map(() => '?').join(',')})
-        `, productIds);
+// POST /api/orders - Criar novo pedido
+router.post('/', authenticateToken, async (req, res) => {
+    try {
+        const { items, shippingAddressId } = req.body;
 
-        if (products.length !== productIds.length) {
-            return res.status(400).json({ error: 'Alguns produtos não foram encontrados' });
+        // Validar dados obrigatórios
+        if (!items || items.length === 0) {
+            return res.status(400).json({ error: 'Carrinho vazio' });
         }
 
-        // Verificar estoque e calcular total
+        if (!shippingAddressId) {
+            return res.status(400).json({ error: 'Endereço de entrega é obrigatório' });
+        }
+
+        // Verificar se o endereço pertence ao usuário
+        const address = addresses.find(a => a.id === shippingAddressId && a.userId === req.user.id);
+        if (!address) {
+            return res.status(400).json({ error: 'Endereço não encontrado' });
+        }
+
+        // Verificar estoque e validar itens
+        const validatedItems = [];
         let totalAmount = 0;
-        const orderItems = [];
 
         for (const item of items) {
-            const product = products.find(p => p.id === item.product_id);
-            
-            if (!product.is_active) {
+            const product = products.find(p => p.id === item.productId);
+            if (!product) {
+                return res.status(400).json({ error: `Produto ${item.productId} não encontrado` });
+            }
+
+            if (!product.isActive) {
+                return res.status(400).json({ error: `Produto ${product.name} não está disponível` });
+            }
+
+            if (product.stock < item.quantity) {
                 return res.status(400).json({ 
-                    error: `Produto "${product.title}" está indisponível` 
+                    error: `Estoque insuficiente para ${product.name}. Disponível: ${product.stock}` 
                 });
             }
 
-            if (product.stock_quantity < item.quantity) {
-                return res.status(400).json({ 
-                    error: `Estoque insuficiente para "${product.title}". Disponível: ${product.stock_quantity}` 
-                });
-            }
+            const subtotal = product.price * item.quantity;
+            totalAmount += subtotal;
 
-            const itemTotal = product.price * item.quantity;
-            totalAmount += itemTotal;
-
-            orderItems.push({
-                product_id: product.id,
+            validatedItems.push({
+                productId: product.id,
+                productName: product.name,
                 quantity: item.quantity,
-                unit_price: product.price,
-                total_price: itemTotal
+                price: product.price,
+                subtotal: subtotal
             });
         }
 
-        // Calcular frete
-        const shippingFee = totalAmount >= 399 ? 0 : 100;
-        const finalTotal = totalAmount + shippingFee;
+        // Criar pedido
+        const orderId = orders.length + 1;
+        const order = new Order(
+            orderId,
+            req.user.id,
+            validatedItems,
+            totalAmount,
+            'pending',
+            address.toJSON()
+        );
 
-        // Gerar número do pedido
-        const orderNumber = `PED-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-
-        // Iniciar transação
-        const connection = await pool.getConnection();
-        await connection.beginTransaction();
-
-        try {
-            // Criar pedido
-            const [orderResult] = await connection.execute(`
-                INSERT INTO orders (order_number, user_id, total_amount, shipping_fee, shipping_address)
-                VALUES (?, ?, ?, ?, ?)
-            `, [orderNumber, userId, finalTotal, shippingFee, JSON.stringify(shipping_address)]);
-
-            const orderId = orderResult.insertId;
-
-            // Criar itens do pedido e atualizar estoque
-            for (const item of orderItems) {
-                await connection.execute(`
-                    INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
-                    VALUES (?, ?, ?, ?, ?)
-                `, [orderId, item.product_id, item.quantity, item.unit_price, item.total_price]);
-
-                // Atualizar estoque
-                await connection.execute(`
-                    UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?
-                `, [item.quantity, item.product_id]);
-            }
-
-            // Registrar status inicial
-            await connection.execute(`
-                INSERT INTO order_status_history (order_id, status, changed_by)
-                VALUES (?, 'pending_payment', ?)
-            `, [orderId, userId]);
-
-            await connection.commit();
-
-            res.status(201).json({
-                message: 'Pedido criado com sucesso',
-                order: {
-                    id: orderId,
-                    order_number: orderNumber,
-                    total_amount: finalTotal,
-                    shipping_fee: shippingFee,
-                    status: 'pending_payment'
-                }
+        // Validar pedido
+        const validation = order.validate();
+        if (!validation.isValid) {
+            return res.status(400).json({ 
+                error: 'Dados do pedido inválidos',
+                details: validation.errors 
             });
-
-        } catch (error) {
-            await connection.rollback();
-            throw error;
-        } finally {
-            connection.release();
         }
+
+        // Salvar pedido
+        orders.push(order);
+
+        res.status(201).json({
+            message: 'Pedido criado com sucesso',
+            order: order.toJSON()
+        });
 
     } catch (error) {
         console.error('Erro ao criar pedido:', error);
@@ -136,296 +158,140 @@ router.post('/', authenticateToken, orderValidation, async (req, res) => {
     }
 });
 
-// Listar pedidos do usuário
-router.get('/my-orders', authenticateToken, async (req, res) => {
+// PUT /api/orders/:id/status - Atualizar status do pedido (apenas operadores e admins)
+router.put('/:id/status', authenticateToken, (req, res) => {
     try {
-        const userId = req.user.id;
-        const page = parseInt(req.query.page) || 1;
-        const pageSize = parseInt(req.query.pageSize) || 10;
-        const offset = (page - 1) * pageSize;
+        // Verificar permissão
+        if (!['operator', 'admin'].includes(req.user.role)) {
+            return res.status(403).json({ error: 'Acesso negado' });
+        }
 
-        // Buscar pedidos
-        const [orders] = await pool.execute(`
-            SELECT o.*, 
-                   COUNT(oi.id) as item_count,
-                   GROUP_CONCAT(p.title SEPARATOR ', ') as product_names
-            FROM orders o
-            LEFT JOIN order_items oi ON o.id = oi.order_id
-            LEFT JOIN products p ON oi.product_id = p.id
-            WHERE o.user_id = ?
-            GROUP BY o.id
-            ORDER BY o.created_at DESC
-            LIMIT ? OFFSET ?
-        `, [userId, pageSize, offset]);
+        const orderId = parseInt(req.params.id);
+        const { status } = req.body;
 
-        // Contar total
-        const [countResult] = await pool.execute(
-            'SELECT COUNT(*) as total FROM orders WHERE user_id = ?',
-            [userId]
-        );
-
-        const total = countResult[0].total;
-
-        res.json({
-            orders,
-            pagination: {
-                page,
-                pageSize,
-                total,
-                totalPages: Math.ceil(total / pageSize)
-            }
-        });
-
-    } catch (error) {
-        console.error('Erro ao listar pedidos:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
-    }
-});
-
-// Buscar pedido por ID
-router.get('/:id', authenticateToken, async (req, res) => {
-    try {
-        const orderId = req.params.id;
-        const userId = req.user.id;
-
-        // Buscar pedido
-        const [orders] = await pool.execute(`
-            SELECT o.*, u.name as user_name, u.email as user_email
-            FROM orders o
-            LEFT JOIN users u ON o.user_id = u.id
-            WHERE o.id = ? AND (o.user_id = ? OR ? = 'admin')
-        `, [orderId, userId, req.user.role]);
-
-        if (orders.length === 0) {
+        const order = orders.find(o => o.id === orderId);
+        if (!order) {
             return res.status(404).json({ error: 'Pedido não encontrado' });
         }
 
-        const order = orders[0];
-
-        // Buscar itens do pedido
-        const [items] = await pool.execute(`
-            SELECT oi.*, p.title, p.image_url, p.sku
-            FROM order_items oi
-            LEFT JOIN products p ON oi.product_id = p.id
-            WHERE oi.order_id = ?
-        `, [orderId]);
-
-        // Buscar histórico de status
-        const [statusHistory] = await pool.execute(`
-            SELECT osh.*, u.name as changed_by_name
-            FROM order_status_history osh
-            LEFT JOIN users u ON osh.changed_by = u.id
-            WHERE osh.order_id = ?
-            ORDER BY osh.created_at ASC
-        `, [orderId]);
+        // Atualizar status
+        order.updateStatus(status);
 
         res.json({
-            order: {
-                ...order,
-                items,
-                status_history: statusHistory
-            }
+            message: 'Status atualizado com sucesso',
+            order: order.toJSON()
         });
-
-    } catch (error) {
-        console.error('Erro ao buscar pedido:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
-    }
-});
-
-// Atualizar status do pedido (apenas admins)
-router.put('/:id/status', authenticateToken, requireRole(['admin']), [
-    body('status').isIn(['pending_payment', 'paid', 'shipped', 'delivered', 'cancelled'])
-        .withMessage('Status inválido'),
-    body('reason').optional().trim()
-], async (req, res) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const orderId = req.params.id;
-        const { status, reason } = req.body;
-
-        // Verificar se pedido existe
-        const [orders] = await pool.execute(
-            'SELECT id, status FROM orders WHERE id = ?',
-            [orderId]
-        );
-
-        if (orders.length === 0) {
-            return res.status(404).json({ error: 'Pedido não encontrado' });
-        }
-
-        const currentStatus = orders[0].status;
-
-        // Validar transição de status
-        const validTransitions = {
-            'pending_payment': ['paid', 'cancelled'],
-            'paid': ['shipped', 'cancelled'],
-            'shipped': ['delivered'],
-            'delivered': [],
-            'cancelled': []
-        };
-
-        if (!validTransitions[currentStatus].includes(status)) {
-            return res.status(400).json({ 
-                error: `Não é possível alterar status de "${currentStatus}" para "${status}"` 
-            });
-        }
-
-        // Atualizar status do pedido
-        await pool.execute(
-            'UPDATE orders SET status = ? WHERE id = ?',
-            [status, orderId]
-        );
-
-        // Registrar no histórico
-        await pool.execute(`
-            INSERT INTO order_status_history (order_id, status, changed_by, reason)
-            VALUES (?, ?, ?, ?)
-        `, [orderId, status, req.user.id, reason || null]);
-
-        res.json({ message: 'Status do pedido atualizado com sucesso' });
 
     } catch (error) {
         console.error('Erro ao atualizar status:', error);
+        
+        if (error.message.includes('Transição de status inválida')) {
+            return res.status(400).json({ error: error.message });
+        }
+
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
 
-// Cancelar pedido
-router.post('/:id/cancel', authenticateToken, [
-    body('reason').trim().isLength({ min: 5 }).withMessage('Motivo do cancelamento é obrigatório (mín. 5 caracteres)')
-], async (req, res) => {
+// POST /api/orders/:id/cancel - Cancelar pedido
+router.post('/:id/cancel', authenticateToken, (req, res) => {
     try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const orderId = req.params.id;
+        const orderId = parseInt(req.params.id);
         const { reason } = req.body;
-        const userId = req.user.id;
 
-        // Verificar se pedido existe e pertence ao usuário
-        const [orders] = await pool.execute(`
-            SELECT id, status, user_id FROM orders WHERE id = ?
-        `, [orderId]);
-
-        if (orders.length === 0) {
+        const order = orders.find(o => o.id === orderId && o.userId === req.user.id);
+        if (!order) {
             return res.status(404).json({ error: 'Pedido não encontrado' });
         }
 
-        const order = orders[0];
+        // Cancelar pedido
+        order.cancel(reason);
 
-        if (order.user_id !== userId && req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Você só pode cancelar seus próprios pedidos' });
-        }
-
-        // Verificar se pode ser cancelado
-        if (!['pending_payment', 'paid'].includes(order.status)) {
-            return res.status(400).json({ 
-                error: 'Pedido não pode ser cancelado neste status' 
-            });
-        }
-
-        // Iniciar transação
-        const connection = await pool.getConnection();
-        await connection.beginTransaction();
-
-        try {
-            // Atualizar status para cancelado
-            await connection.execute(
-                'UPDATE orders SET status = ? WHERE id = ?',
-                ['cancelled', orderId]
-            );
-
-            // Registrar no histórico
-            await connection.execute(`
-                INSERT INTO order_status_history (order_id, status, changed_by, reason)
-                VALUES (?, 'cancelled', ?, ?)
-            `, [orderId, userId, reason]);
-
-            // Se estava pago, devolver estoque
-            if (order.status === 'paid') {
-                const [items] = await connection.execute(`
-                    SELECT product_id, quantity FROM order_items WHERE order_id = ?
-                `, [orderId]);
-
-                for (const item of items) {
-                    await connection.execute(`
-                        UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?
-                    `, [item.quantity, item.product_id]);
-                }
-            }
-
-            await connection.commit();
-
-            res.json({ message: 'Pedido cancelado com sucesso' });
-
-        } catch (error) {
-            await connection.rollback();
-            throw error;
-        } finally {
-            connection.release();
-        }
+        res.json({
+            message: 'Pedido cancelado com sucesso',
+            order: order.toJSON()
+        });
 
     } catch (error) {
         console.error('Erro ao cancelar pedido:', error);
+        
+        if (error.message.includes('não pode ser cancelado') || 
+            error.message.includes('Motivo do cancelamento')) {
+            return res.status(400).json({ error: error.message });
+        }
+
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
 
-// Listar todos os pedidos (apenas admins)
-router.get('/', authenticateToken, requireRole(['admin']), async (req, res) => {
+// POST /api/orders/:id/return - Solicitar devolução
+router.post('/:id/return', authenticateToken, (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const pageSize = parseInt(req.query.pageSize) || 20;
-        const offset = (page - 1) * pageSize;
-        const status = req.query.status;
+        const orderId = parseInt(req.params.id);
+        const { reason } = req.body;
 
-        let whereClause = '1=1';
-        let params = [];
-
-        if (status) {
-            whereClause += ' AND o.status = ?';
-            params.push(status);
+        const order = orders.find(o => o.id === orderId && o.userId === req.user.id);
+        if (!order) {
+            return res.status(404).json({ error: 'Pedido não encontrado' });
         }
 
-        // Buscar pedidos
-        const [orders] = await pool.execute(`
-            SELECT o.*, u.name as user_name, u.email as user_email,
-                   COUNT(oi.id) as item_count
-            FROM orders o
-            LEFT JOIN users u ON o.user_id = u.id
-            LEFT JOIN order_items oi ON o.id = oi.order_id
-            WHERE ${whereClause}
-            GROUP BY o.id
-            ORDER BY o.created_at DESC
-            LIMIT ? OFFSET ?
-        `, [...params, pageSize, offset]);
+        if (!order.canBeReturned()) {
+            return res.status(400).json({ 
+                error: 'Pedido não pode ser devolvido. Prazo de 7 dias após entrega expirado.' 
+            });
+        }
 
-        // Contar total
-        const [countResult] = await pool.execute(`
-            SELECT COUNT(*) as total FROM orders o WHERE ${whereClause}
-        `, params);
+        if (!reason || reason.trim().length < 10) {
+            return res.status(400).json({ 
+                error: 'Motivo da devolução deve ter pelo menos 10 caracteres' 
+            });
+        }
 
-        const total = countResult[0].total;
+        // Atualizar status para devolvido
+        order.updateStatus('returned');
+        order.cancellationReason = reason; // Reutilizar campo para motivo da devolução
 
         res.json({
-            orders,
-            pagination: {
-                page,
-                pageSize,
-                total,
-                totalPages: Math.ceil(total / pageSize)
-            }
+            message: 'Devolução solicitada com sucesso',
+            order: order.toJSON()
         });
 
     } catch (error) {
-        console.error('Erro ao listar pedidos:', error);
+        console.error('Erro ao solicitar devolução:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// GET /api/orders/stats - Estatísticas de pedidos (apenas admins)
+router.get('/stats', authenticateToken, (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Acesso negado' });
+        }
+
+        const totalOrders = orders.length;
+        const pendingOrders = orders.filter(o => o.status === 'pending').length;
+        const paidOrders = orders.filter(o => o.status === 'paid').length;
+        const shippedOrders = orders.filter(o => o.status === 'shipped').length;
+        const deliveredOrders = orders.filter(o => o.status === 'delivered').length;
+        const cancelledOrders = orders.filter(o => o.status === 'cancelled').length;
+
+        const totalRevenue = orders
+            .filter(o => ['paid', 'shipped', 'delivered'].includes(o.status))
+            .reduce((sum, o) => sum + o.totalAmount, 0);
+
+        res.json({
+            totalOrders,
+            pendingOrders,
+            paidOrders,
+            shippedOrders,
+            deliveredOrders,
+            cancelledOrders,
+            totalRevenue
+        });
+
+    } catch (error) {
+        console.error('Erro ao obter estatísticas:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });

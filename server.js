@@ -49,6 +49,9 @@ app.use(express.static('public'));
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
+const addressRoutes = require('./routes/addresses');
+const cartRoutes = require('./routes/cart');
+const orderRoutes = require('./routes/orders');
 const paymentRoutes = require('./routes/payments');
 const supplierRoutes = require('./routes/suppliers');
 
@@ -56,6 +59,8 @@ const supplierRoutes = require('./routes/suppliers');
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/addresses', addressRoutes);
+app.use('/api/cart', cartRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/suppliers', supplierRoutes);
 
