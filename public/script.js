@@ -118,6 +118,11 @@ function displayProducts(products, containerId) {
         container.appendChild(productCard);
     });
     
+    // Atualizar botões de wishlist após produtos serem carregados
+    if (typeof wishlistSystem !== 'undefined' && wishlistSystem) {
+        wishlistSystem.refreshWishlistButtons();
+    }
+    
     hideLoading(containerId);
 }
 
@@ -125,6 +130,7 @@ function displayProducts(products, containerId) {
 function createProductCard(product) {
     const card = document.createElement('div');
     card.className = 'product-card';
+    card.dataset.productId = product.id;
     
     // Formatar preço
     const price = product.price ? product.price.final : 0;

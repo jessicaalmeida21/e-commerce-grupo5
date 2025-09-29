@@ -5,89 +5,42 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Configuração de CORS
+const corsOptions = {
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'https://ecommerce-grupo5.vercel.app',
+            'https://ecommerce-grupo5.netlify.app',
+            'https://ecommerce-grupo5.railway.app',
+        ];
+        
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            if (process.env.NODE_ENV === 'development') {
+                callback(null, true);
+            } else {
+                callback(new Error('Não permitido pelo CORS'));
+            }
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.static('public'));
 
-// Mock de dados em memória
-let users = [
-    { id: 1, name: 'Admin', email: 'admin@ecommerce.com', password: 'Admin123@', role: 'admin' },
-    { id: 2, name: 'Cliente Teste', email: 'cliente@teste.com', password: 'Cliente123@', role: 'client' },
-    { id: 3, name: 'Fornecedor Teste', email: 'fornecedor@teste.com', password: 'Fornecedor123@', role: 'supplier' }
-];
-
-let products = [
-    { id: 1, title: 'Produto 1', price: 100, category: 'casa', stock: 10, image: 'https://via.placeholder.com/300x200' },
-    { id: 2, title: 'Produto 2', price: 200, category: 'eletronicos', stock: 5, image: 'https://via.placeholder.com/300x200' },
-    { id: 3, title: 'Produto 3', price: 150, category: 'roupas', stock: 8, image: 'https://via.placeholder.com/300x200' }
-];
-
-let orders = [];
-let cart = {};
-
-// Rotas da API
-app.get('/api/products', (req, res) => {
-    res.json({ products });
-});
-
-app.post('/api/auth/login', (req, res) => {
-    const { email, password } = req.body;
-    const user = users.find(u => u.email === email && u.password === password);
-    
-    if (user) {
-        res.json({
-            message: 'Login realizado com sucesso',
-            user: { id: user.id, name: user.name, email: user.email, role: user.role },
-            token: 'mock-token-' + Date.now()
-        });
-    } else {
-        res.status(401).json({ error: 'Credenciais inválidas' });
-    }
-});
-
-app.post('/api/auth/register', (req, res) => {
-    const { name, email, password, role } = req.body;
-    const newUser = { id: users.length + 1, name, email, password, role };
-    users.push(newUser);
-    
-    res.status(201).json({
-        message: 'Usuário criado com sucesso',
-        user: { id: newUser.id, name: newUser.name, email: newUser.email, role: newUser.role },
-        token: 'mock-token-' + Date.now()
-    });
-});
-
-app.post('/api/orders', (req, res) => {
-    const { items, shipping_address } = req.body;
-    const orderId = orders.length + 1;
-    const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    
-    const order = {
-        id: orderId,
-        order_number: `PED-${orderId}`,
-        items,
-        total,
-        shipping_address,
-        status: 'pending_payment',
-        created_at: new Date()
-    };
-    
-    orders.push(order);
-    res.status(201).json({ message: 'Pedido criado com sucesso', order });
-});
-
-// Servir páginas
+// Rotas básicas para servir páginas HTML
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
-
-app.get('/cadastro', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'cadastro.html'));
 });
 
 app.get('/produtos', (req, res) => {
@@ -98,6 +51,107 @@ app.get('/contato', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'contato.html'));
 });
 
+app.get('/login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+app.get('/cadastro', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'cadastro.html'));
+});
+
+app.get('/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
+app.get('/checkout', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'checkout.html'));
+});
+
+app.get('/pagamento', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'pagamento.html'));
+});
+
+app.get('/logistica', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'logistica.html'));
+});
+
+// API Mock para produtos (sem banco de dados)
+app.get('/api/products', (req, res) => {
+    const mockProducts = [
+        {
+            id: 'PROD-001',
+            title: 'Smartphone Samsung Galaxy S23',
+            category: 'Eletrônicos',
+            price: { final: 2500.00 },
+            image: 'https://via.placeholder.com/300x200?text=Samsung+Galaxy+S23',
+            rating: { average: 4.5, count: 128 }
+        },
+        {
+            id: 'PROD-002',
+            title: 'Notebook Dell Inspiron 15',
+            category: 'Eletrônicos',
+            price: { final: 3200.00 },
+            image: 'https://via.placeholder.com/300x200?text=Dell+Inspiron+15',
+            rating: { average: 4.3, count: 89 }
+        },
+        {
+            id: 'PROD-003',
+            title: 'Fone de Ouvido JBL',
+            category: 'Eletrônicos',
+            price: { final: 299.99 },
+            image: 'https://via.placeholder.com/300x200?text=JBL+Headphones',
+            rating: { average: 4.7, count: 256 }
+        },
+        {
+            id: 'PROD-004',
+            title: 'Camiseta Nike Dri-FIT',
+            category: 'Moda',
+            price: { final: 89.90 },
+            image: 'https://via.placeholder.com/300x200?text=Nike+Camiseta',
+            rating: { average: 4.2, count: 67 }
+        },
+        {
+            id: 'PROD-005',
+            title: 'Tênis Adidas Ultraboost',
+            category: 'Moda',
+            price: { final: 599.99 },
+            image: 'https://via.placeholder.com/300x200?text=Adidas+Ultraboost',
+            rating: { average: 4.6, count: 143 }
+        },
+        {
+            id: 'PROD-006',
+            title: 'Livro JavaScript: O Guia Definitivo',
+            category: 'Livros',
+            price: { final: 129.90 },
+            image: 'https://via.placeholder.com/300x200?text=JavaScript+Guide',
+            rating: { average: 4.8, count: 89 }
+        }
+    ];
+
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 12;
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    
+    const products = mockProducts.slice(startIndex, endIndex);
+    
+    res.json({
+        products: products,
+        meta: {
+            total: mockProducts.length,
+            page: page,
+            pageSize: pageSize,
+            totalPages: Math.ceil(mockProducts.length / pageSize)
+        }
+    });
+});
+
+// Middleware de erro
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Algo deu errado!' });
+});
+
 // Iniciar servidor
 app.listen(PORT, () => {
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
@@ -105,7 +159,9 @@ app.listen(PORT, () => {
     console.log(`🔐 Login: http://localhost:${PORT}/login`);
     console.log(`📝 Cadastro: http://localhost:${PORT}/cadastro`);
     console.log(`🛍️ Produtos: http://localhost:${PORT}/produtos`);
+    console.log(`\n✨ Funcionalidades disponíveis:`);
+    console.log(`   ❤️ Sistema de Wishlist`);
+    console.log(`   🔔 Notificações Toast`);
+    console.log(`   🛒 Carrinho de Compras`);
+    console.log(`   📱 Design Responsivo`);
 });
-
-module.exports = app;
-

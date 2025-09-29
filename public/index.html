@@ -74,12 +74,18 @@
                     </div>
 
                     <div class="header-actions">
-                <div class="cart-icon">
-                    <a href="#" id="cart-toggle">
-                        <i class="fas fa-shopping-cart"></i>
-                        <span class="cart-count" id="cart-count">0</span>
-                    </a>
-                </div>
+                        <div class="wishlist-icon">
+                            <a href="#" id="wishlist-toggle">
+                                <i class="fas fa-heart"></i>
+                                <span class="wishlist-counter" id="wishlist-count">0</span>
+                            </a>
+                        </div>
+                        <div class="cart-icon">
+                            <a href="#" id="cart-toggle">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span class="cart-count" id="cart-count">0</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -216,7 +222,27 @@
         </div>
     </div>
 
+    <!-- Modal da Wishlist -->
+    <div class="wishlist-modal" id="wishlist-modal">
+        <div class="wishlist-content">
+            <div class="wishlist-header">
+                <h2><i class="fas fa-heart"></i> Lista de Desejos</h2>
+                <button class="close-wishlist" id="close-wishlist">&times;</button>
+            </div>
+            <div class="wishlist-items" id="wishlist-items">
+                <!-- Itens da wishlist serão inseridos aqui -->
+            </div>
+            <div class="wishlist-footer">
+                <div class="wishlist-count">
+                    <strong id="wishlist-total-count">0</strong> itens na sua lista de desejos
+                </div>
+                <button class="btn-clear-wishlist" id="clear-wishlist-btn">Limpar Lista</button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
+    <script src="wishlist.js"></script>
     <script src="test-accounts.js"></script>
 </body>
 </html>
