@@ -207,6 +207,20 @@ const registerForm = document.getElementById('register-form');
         return emailRegex.test(email);
     }
 
+    updateUIForLoggedUser() {
+        if (!this.currentUser) return;
+
+        const authLinks = document.getElementById('auth-links');
+        const userMenu = document.getElementById('user-menu');
+        const userName = document.getElementById('user-name');
+
+        if (authLinks && userMenu && userName) {
+            authLinks.style.display = 'none';
+            userMenu.style.display = 'block';
+            userName.textContent = `${this.currentUser.firstName} ${this.currentUser.lastName}`;
+        }
+    }
+
     checkPasswordMatch() {
         const password = document.getElementById('password').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
