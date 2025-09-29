@@ -31,6 +31,15 @@ function initializeDashboard() {
         }
     }
 
+    const stockTab = document.getElementById('stock-tab');
+    if (stockTab) {
+        if (['operator', 'admin'].includes(user.role)) {
+            stockTab.style.display = 'block';
+        } else {
+            stockTab.style.display = 'none';
+        }
+    }
+
     const adminTab = document.getElementById('admin-tab');
     if (adminTab) {
         if (user.role === 'admin') {

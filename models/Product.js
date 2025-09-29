@@ -1,24 +1,16 @@
 class Product {
-    constructor(id, name, description, category, price, stock, supplierId, isActive = true, imageUrl = null, sku = null, createdAt = null, updatedAt = null) {
+    constructor(id, name, description, category, price, stock, image, isActive = true, maxStock = null, createdAt = null, updatedAt = null) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.category = category;
         this.price = price;
         this.stock = stock;
-        this.supplierId = supplierId;
+        this.image = image;
         this.isActive = isActive;
-        this.imageUrl = imageUrl;
-        this.sku = sku || this.generateSKU();
+        this.maxStock = maxStock; // Limite máximo de estoque (opcional)
         this.createdAt = createdAt || new Date();
         this.updatedAt = updatedAt || new Date();
-    }
-
-    // Gerar SKU automático
-    generateSKU() {
-        const prefix = this.category.substring(0, 3).toUpperCase();
-        const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-        return `${prefix}-${random}`;
     }
 
     // Validar dados do produto
@@ -26,7 +18,7 @@ class Product {
         const errors = [];
 
         if (!this.name || this.name.trim().length < 2) {
-            errors.push('Nome do produto deve ter pelo menos 2 caracteres');
+            errors.push('Nome deve ter pelo menos 2 caracteres');
         }
 
         if (!this.description || this.description.trim().length < 10) {
@@ -45,8 +37,8 @@ class Product {
             errors.push('Estoque não pode ser negativo');
         }
 
-        if (!this.supplierId) {
-            errors.push('Fornecedor é obrigatório');
+        if (this.maxStock && this.stock > this.maxStock) {
+            errors.push('Estoque atual excede o limite máximo');
         }
 
         return {
@@ -55,25 +47,57 @@ class Product {
         };
     }
 
-    // Atualizar estoque
-    updateStock(quantity, operation = 'add') {
-        if (operation === 'add') {
-            this.stock += quantity;
-        } else if (operation === 'subtract') {
-            this.stock = Math.max(0, this.stock - quantity);
-        } else if (operation === 'set') {
-            this.stock = quantity;
+    // Aumentar estoque em lotes de 10
+    addStock(quantity) {
+        // Validar se o produto está ativo
+        if (!this.isActive) {
+            throw new Error('Produto inativo: não é possível ajustar estoque');
         }
-        
+
+        // Validar se a quantidade é múltiplo de 10
+        if (quantity % 10 !== 0) {
+            throw new Error('Acréscimo deve ser em lotes de 10 (10, 20, 30...)');
+        }
+
+        // Validar se a quantidade é positiva
+        if (quantity <= 0) {
+            throw new Error('Quantidade deve ser positiva');
+        }
+
+        // Verificar limite máximo de estoque
+        if (this.maxStock && (this.stock + quantity) > this.maxStock) {
+            throw new Error(`Operação ultrapassa o limite de estoque (máx. ${this.maxStock})`);
+        }
+
+        // Aplicar acréscimo
+            this.stock += quantity;
         this.updatedAt = new Date();
+
+        return this.stock;
     }
 
-    // Verificar disponibilidade
-    isAvailable(quantity = 1) {
-        return this.isActive && this.stock >= quantity;
+    // Obter imagem baseada na categoria
+    getImageUrl() {
+        if (this.image) {
+            return this.image;
+        }
+
+        // Imagens padrão baseadas na categoria
+        const categoryImages = {
+            'eletrônicos': 'https://images.unsplash.com/photo-1498049794561-7780c723c765?w=300&h=200&fit=crop',
+            'moda': 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=300&h=200&fit=crop',
+            'casa': 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=300&h=200&fit=crop',
+            'esportes': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=300&h=200&fit=crop',
+            'livros': 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=200&fit=crop',
+            'games': 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=300&h=200&fit=crop',
+            'beleza': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=300&h=200&fit=crop',
+            'automotivo': 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&h=200&fit=crop'
+        };
+
+        return categoryImages[this.category.toLowerCase()] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=200&fit=crop';
     }
 
-    // Retornar dados para API
+    // Retornar dados sem informações sensíveis
     toJSON() {
         return {
             id: this.id,
@@ -82,31 +106,25 @@ class Product {
             category: this.category,
             price: this.price,
             stock: this.stock,
-            supplierId: this.supplierId,
+            image: this.getImageUrl(),
             isActive: this.isActive,
-            imageUrl: this.imageUrl,
-            sku: this.sku,
+            maxStock: this.maxStock,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt
         };
     }
 
-    // Criar produto a partir de dados do banco
-    static fromDatabase(row) {
-        return new Product(
-            row.id,
-            row.name,
-            row.description,
-            row.category,
-            row.price,
-            row.stock,
-            row.supplier_id,
-            row.is_active,
-            row.image_url,
-            row.sku,
-            row.created_at,
-            row.updated_at
-        );
+    // Retornar dados para listagem (versão resumida)
+    toListJSON() {
+        return {
+            id: this.id,
+            name: this.name,
+            category: this.category,
+            price: this.price,
+            stock: this.stock,
+            image: this.getImageUrl(),
+            isActive: this.isActive
+        };
     }
 }
 

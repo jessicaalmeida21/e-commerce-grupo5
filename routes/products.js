@@ -1,84 +1,116 @@
 const express = require('express');
-const { pool } = require('../config/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
-const { body, validationResult, query } = require('express-validator');
-
+const Product = require('../models/Product');
 const router = express.Router();
 
-// Validações
-const productValidation = [
-    body('title').trim().isLength({ min: 3 }).withMessage('Título deve ter pelo menos 3 caracteres'),
-    body('description').optional().trim(),
-    body('category').trim().notEmpty().withMessage('Categoria é obrigatória'),
-    body('brand').optional().trim(),
-    body('price').isFloat({ min: 0.01 }).withMessage('Preço deve ser maior que zero'),
-    body('stock_quantity').isInt({ min: 0 }).withMessage('Quantidade em estoque deve ser não negativa'),
-    body('max_stock').optional().isInt({ min: 1 }).withMessage('Estoque máximo deve ser positivo'),
-    body('sku').optional().trim(),
-    body('image_url').optional().isURL().withMessage('URL da imagem deve ser válida')
+// Mock de banco de dados em memória
+let products = [
+    new Product(1, 'Smartphone Samsung Galaxy S21', 'Smartphone com tela de 6.2", câmera tripla de 64MP, 128GB de armazenamento', 'eletrônicos', 1299.99, 50, null, true, 100),
+    new Product(2, 'Notebook Dell Inspiron 15', 'Notebook com processador Intel i5, 8GB RAM, SSD 256GB, tela Full HD 15.6"', 'eletrônicos', 2499.99, 25, null, true, 50),
+    new Product(3, 'Camiseta Polo Masculina', 'Camiseta polo 100% algodão, disponível em várias cores e tamanhos', 'moda', 89.90, 100, null, true, 200),
+    new Product(4, 'Tênis Nike Air Max', 'Tênis esportivo com tecnologia Air Max, ideal para corrida e caminhada', 'esportes', 299.90, 75, null, true, 150),
+    new Product(5, 'Livro "O Poder do Hábito"', 'Livro de Charles Duhigg sobre como transformar hábitos e alcançar o sucesso', 'livros', 39.90, 30, null, true, 100),
+    new Product(6, 'PlayStation 5', 'Console de videogame da Sony com SSD ultra-rápido e gráficos 4K', 'games', 4299.99, 10, null, true, 25),
+    new Product(7, 'Cadeira Gamer RGB', 'Cadeira gamer ergonômica com apoio lombar e iluminação RGB', 'games', 599.90, 15, null, true, 30),
+    new Product(8, 'Kit de Maquiagem Completo', 'Kit com base, pó, batom, sombra e pincéis profissionais', 'beleza', 199.90, 40, null, true, 80),
+    new Product(9, 'Pneu Aro 15 175/70R14', 'Pneu para carro popular, garantia de 50.000 km', 'automotivo', 189.90, 20, null, true, 50),
+    new Product(10, 'Sofá 3 Lugares Cinza', 'Sofá retrátil com pés de madeira, tecido resistente', 'casa', 899.90, 5, null, true, 15),
+    new Product(11, 'Produto Inativo', 'Este produto está inativo para teste', 'eletrônicos', 99.90, 0, null, false, 10),
+    new Product(12, 'Smartwatch Apple Watch', 'Relógio inteligente com GPS, monitoramento de saúde e resistência à água', 'eletrônicos', 1999.99, 35, null, true, 60),
+    new Product(13, 'Mesa de Escritório', 'Mesa de madeira maciça com gavetas e prateleiras', 'casa', 459.90, 12, null, true, 25),
+    new Product(14, 'Kit de Ferramentas', 'Kit completo com 50 peças para manutenção doméstica', 'casa', 129.90, 25, null, true, 50),
+    new Product(15, 'Perfume Importado', 'Perfume masculino com fragrância amadeirada e duração de 8 horas', 'beleza', 149.90, 18, null, true, 40)
 ];
 
-// Listar produtos (público)
-router.get('/', [
-    query('page').optional().isInt({ min: 1 }).withMessage('Página deve ser um número positivo'),
-    query('pageSize').optional().isInt({ min: 1, max: 100 }).withMessage('Tamanho da página deve ser entre 1 e 100'),
-    query('category').optional().trim(),
-    query('search').optional().trim(),
-    query('sortBy').optional().isIn(['name', 'price', 'created_at']).withMessage('Ordenação inválida'),
-    query('sortOrder').optional().isIn(['asc', 'desc']).withMessage('Ordem inválida')
-], async (req, res) => {
+// Middleware de autenticação
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ error: 'Token de acesso necessário' });
+    }
+
     try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'e2e-commerce-secret-key');
+        req.user = decoded;
+        next();
+    } catch (error) {
+        return res.status(403).json({ error: 'Token inválido' });
+    }
+};
 
-        const page = parseInt(req.query.page) || 1;
-        const pageSize = parseInt(req.query.pageSize) || 12;
-        const offset = (page - 1) * pageSize;
-        const category = req.query.category;
-        const search = req.query.search;
-        const sortBy = req.query.sortBy || 'created_at';
-        const sortOrder = req.query.sortOrder || 'desc';
+// GET /api/products - Listar produtos com filtros e paginação
+router.get('/', (req, res) => {
+    try {
+        const { 
+            page = 1, 
+            limit = 10, 
+            search = '', 
+            category = '', 
+            sortBy = 'name', 
+            sortOrder = 'asc' 
+        } = req.query;
 
-        let whereClause = 'WHERE is_active = true';
-        let params = [];
+        let filteredProducts = [...products];
 
-        if (category) {
-            whereClause += ' AND category = ?';
-            params.push(category);
-        }
-
+        // Filtrar por busca
         if (search) {
-            whereClause += ' AND (title LIKE ? OR description LIKE ?)';
-            params.push(`%${search}%`, `%${search}%`);
+            filteredProducts = filteredProducts.filter(product => 
+                product.name.toLowerCase().includes(search.toLowerCase()) ||
+                product.description.toLowerCase().includes(search.toLowerCase())
+            );
         }
 
-        // Contar total de produtos
-        const countQuery = `SELECT COUNT(*) as total FROM products ${whereClause}`;
-        const [countResult] = await pool.execute(countQuery, params);
-        const total = countResult[0].total;
+        // Filtrar por categoria
+        if (category) {
+            filteredProducts = filteredProducts.filter(product => 
+                product.category.toLowerCase() === category.toLowerCase()
+            );
+        }
 
-        // Buscar produtos
-        const productsQuery = `
-            SELECT p.*, u.name as supplier_name
-            FROM products p
-            LEFT JOIN users u ON p.supplier_id = u.id
-            ${whereClause}
-            ORDER BY p.${sortBy} ${sortOrder}
-            LIMIT ? OFFSET ?
-        `;
-        
-        params.push(pageSize, offset);
-        const [products] = await pool.execute(productsQuery, params);
+        // Ordenar
+        filteredProducts.sort((a, b) => {
+            let aValue = a[sortBy];
+            let bValue = b[sortBy];
+
+            if (sortBy === 'price' || sortBy === 'stock') {
+                aValue = parseFloat(aValue);
+                bValue = parseFloat(bValue);
+            } else {
+                aValue = aValue.toString().toLowerCase();
+                bValue = bValue.toString().toLowerCase();
+            }
+
+            if (sortOrder === 'desc') {
+                return bValue > aValue ? 1 : -1;
+            } else {
+                return aValue > bValue ? 1 : -1;
+            }
+        });
+
+        // Paginação
+        const startIndex = (page - 1) * limit;
+        const endIndex = startIndex + parseInt(limit);
+        const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+
+        // Obter categorias únicas para filtros
+        const categories = [...new Set(products.map(p => p.category))];
 
         res.json({
-            products,
+            products: paginatedProducts.map(p => p.toListJSON()),
             pagination: {
-                page,
-                pageSize,
-                total,
-                totalPages: Math.ceil(total / pageSize)
+                currentPage: parseInt(page),
+                totalPages: Math.ceil(filteredProducts.length / limit),
+                totalItems: filteredProducts.length,
+                itemsPerPage: parseInt(limit)
+            },
+            filters: {
+                categories,
+                search,
+                category,
+                sortBy,
+                sortOrder
             }
         });
 
@@ -88,260 +120,116 @@ router.get('/', [
     }
 });
 
-// Buscar produto por ID (público)
-router.get('/:id', async (req, res) => {
+// GET /api/products/:id - Obter detalhes de um produto
+router.get('/:id', (req, res) => {
     try {
-        const productId = req.params.id;
+        const productId = parseInt(req.params.id);
+        const product = products.find(p => p.id === productId);
 
-        const [products] = await pool.execute(`
-            SELECT p.*, u.name as supplier_name
-            FROM products p
-            LEFT JOIN users u ON p.supplier_id = u.id
-            WHERE p.id = ? AND p.is_active = true
-        `, [productId]);
-
-        if (products.length === 0) {
+        if (!product) {
             return res.status(404).json({ error: 'Produto não encontrado' });
         }
 
-        res.json({ product: products[0] });
+        res.json({ product: product.toJSON() });
 
     } catch (error) {
-        console.error('Erro ao buscar produto:', error);
+        console.error('Erro ao obter produto:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
 
-// Criar produto (apenas fornecedores e admins)
-router.post('/', authenticateToken, requireRole(['supplier', 'admin']), productValidation, async (req, res) => {
+// POST /api/products/:id/stock - Aumentar estoque (apenas operadores e admins)
+router.post('/:id/stock', authenticateToken, (req, res) => {
     try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const {
-            title, description, category, brand, price, stock_quantity,
-            max_stock, sku, image_url
-        } = req.body;
-
-        // Verificar se SKU já existe
-        if (sku) {
-            const [existingProducts] = await pool.execute(
-                'SELECT id FROM products WHERE sku = ?',
-                [sku]
-            );
-
-            if (existingProducts.length > 0) {
-                return res.status(400).json({ error: 'SKU já existe' });
-            }
-        }
-
-        // Inserir produto
-        const [result] = await pool.execute(`
-            INSERT INTO products (title, description, category, brand, price, stock_quantity, 
-                                max_stock, sku, image_url, supplier_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [title, description, category, brand, price, stock_quantity, 
-            max_stock || 1000, sku, image_url, req.user.id]);
-
-        const productId = result.insertId;
-
-        // Buscar produto criado
-        const [products] = await pool.execute(`
-            SELECT p.*, u.name as supplier_name
-            FROM products p
-            LEFT JOIN users u ON p.supplier_id = u.id
-            WHERE p.id = ?
-        `, [productId]);
-
-        res.status(201).json({
-            message: 'Produto criado com sucesso',
-            product: products[0]
-        });
-
-    } catch (error) {
-        console.error('Erro ao criar produto:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
-    }
-});
-
-// Atualizar produto (apenas fornecedores e admins)
-router.put('/:id', authenticateToken, requireRole(['supplier', 'admin']), productValidation, async (req, res) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const productId = req.params.id;
-        const {
-            title, description, category, brand, price, stock_quantity,
-            max_stock, sku, image_url, is_active
-        } = req.body;
-
-        // Verificar se produto existe e se o usuário tem permissão
-        const [existingProducts] = await pool.execute(`
-            SELECT supplier_id FROM products WHERE id = ?
-        `, [productId]);
-
-        if (existingProducts.length === 0) {
-            return res.status(404).json({ error: 'Produto não encontrado' });
-        }
-
-        // Verificar permissão (admin pode editar qualquer produto, fornecedor apenas os seus)
-        if (req.user.role !== 'admin' && existingProducts[0].supplier_id !== req.user.id) {
-            return res.status(403).json({ error: 'Você só pode editar seus próprios produtos' });
-        }
-
-        // Verificar se SKU já existe para outro produto
-        if (sku) {
-            const [skuCheck] = await pool.execute(
-                'SELECT id FROM products WHERE sku = ? AND id != ?',
-                [sku, productId]
-            );
-
-            if (skuCheck.length > 0) {
-                return res.status(400).json({ error: 'SKU já existe' });
-            }
-        }
-
-        // Atualizar produto
-        await pool.execute(`
-            UPDATE products SET 
-                title = ?, description = ?, category = ?, brand = ?, 
-                price = ?, stock_quantity = ?, max_stock = ?, 
-                sku = ?, image_url = ?, is_active = ?
-            WHERE id = ?
-        `, [title, description, category, brand, price, stock_quantity, 
-            max_stock, sku, image_url, is_active !== undefined ? is_active : true, productId]);
-
-        res.json({ message: 'Produto atualizado com sucesso' });
-
-    } catch (error) {
-        console.error('Erro ao atualizar produto:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
-    }
-});
-
-// Deletar produto (apenas fornecedores e admins)
-router.delete('/:id', authenticateToken, requireRole(['supplier', 'admin']), async (req, res) => {
-    try {
-        const productId = req.params.id;
-
-        // Verificar se produto existe e se o usuário tem permissão
-        const [existingProducts] = await pool.execute(`
-            SELECT supplier_id FROM products WHERE id = ?
-        `, [productId]);
-
-        if (existingProducts.length === 0) {
-            return res.status(404).json({ error: 'Produto não encontrado' });
-        }
-
         // Verificar permissão
-        if (req.user.role !== 'admin' && existingProducts[0].supplier_id !== req.user.id) {
-            return res.status(403).json({ error: 'Você só pode deletar seus próprios produtos' });
+        if (!['operator', 'admin'].includes(req.user.role)) {
+            return res.status(403).json({ error: 'Acesso negado. Apenas operadores e administradores podem gerenciar estoque.' });
         }
 
-        // Soft delete (marcar como inativo)
-        await pool.execute(
-            'UPDATE products SET is_active = false WHERE id = ?',
-            [productId]
-        );
-
-        res.json({ message: 'Produto removido com sucesso' });
-
-    } catch (error) {
-        console.error('Erro ao deletar produto:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
-    }
-});
-
-// Aumentar estoque (apenas operadores e admins)
-router.post('/:id/stock', authenticateToken, requireRole(['admin']), [
-    body('quantity').isInt({ min: 10 }).withMessage('Quantidade deve ser múltiplo de 10 e no mínimo 10')
-], async (req, res) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const productId = req.params.id;
+        const productId = parseInt(req.params.id);
         const { quantity } = req.body;
 
-        // Verificar se quantidade é múltiplo de 10
-        if (quantity % 10 !== 0) {
-            return res.status(400).json({ 
-                error: 'Acréscimo deve ser em lotes de 10 (10, 20, 30...)' 
-            });
-        }
-
-        // Buscar produto
-        const [products] = await pool.execute(`
-            SELECT id, title, stock_quantity, max_stock, is_active 
-            FROM products WHERE id = ?
-        `, [productId]);
-
-        if (products.length === 0) {
+        const product = products.find(p => p.id === productId);
+        if (!product) {
             return res.status(404).json({ error: 'Produto não encontrado' });
         }
 
-        const product = products[0];
-
-        // Verificar se produto está ativo
-        if (!product.is_active) {
-            return res.status(400).json({ 
-                error: 'Produto inativo: não é possível ajustar estoque' 
-            });
+        // Validar quantidade
+        if (!quantity || quantity <= 0) {
+            return res.status(400).json({ error: 'Quantidade deve ser positiva' });
         }
 
-        // Verificar limite de estoque
-        const newStock = product.stock_quantity + quantity;
-        if (newStock > product.max_stock) {
-            return res.status(400).json({ 
-                error: `Operação ultrapassa o limite de estoque (máx. ${product.max_stock})` 
-            });
+        if (quantity % 10 !== 0) {
+            return res.status(400).json({ error: 'Acréscimo deve ser em lotes de 10 (10, 20, 30...)' });
         }
 
-        // Atualizar estoque
-        await pool.execute(
-            'UPDATE products SET stock_quantity = ? WHERE id = ?',
-            [newStock, productId]
-        );
+        // Aplicar acréscimo de estoque
+        const newStock = product.addStock(quantity);
 
         res.json({
             message: 'Estoque atualizado com sucesso',
-            product: {
-                id: productId,
-                title: product.title,
-                old_stock: product.stock_quantity,
-                added_quantity: quantity,
-                new_stock: newStock
-            }
+            product: product.toJSON(),
+            addedQuantity: quantity,
+            newStock: newStock
         });
 
     } catch (error) {
         console.error('Erro ao atualizar estoque:', error);
-        res.status(500).json({ error: 'Falha ao atualizar estoque. Tente novamente.' });
+        
+        if (error.message.includes('Produto inativo') || 
+            error.message.includes('Acréscimo deve ser') ||
+            error.message.includes('Operação ultrapassa')) {
+            return res.status(400).json({ error: error.message });
+        }
+
+        res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
 
-// Listar categorias
-router.get('/categories/list', async (req, res) => {
+// GET /api/products/categories - Obter lista de categorias
+router.get('/categories', (req, res) => {
     try {
-        const [categories] = await pool.execute(`
-            SELECT DISTINCT category, COUNT(*) as product_count
-            FROM products 
-            WHERE is_active = true 
-            GROUP BY category 
-            ORDER BY category
-        `);
-
+        const categories = [...new Set(products.map(p => p.category))];
         res.json({ categories });
+    } catch (error) {
+        console.error('Erro ao obter categorias:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// GET /api/products/stats - Estatísticas de produtos (apenas admins)
+router.get('/stats', authenticateToken, (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Acesso negado' });
+        }
+
+        const totalProducts = products.length;
+        const activeProducts = products.filter(p => p.isActive).length;
+        const inactiveProducts = totalProducts - activeProducts;
+        const totalStock = products.reduce((sum, p) => sum + p.stock, 0);
+        const lowStockProducts = products.filter(p => p.stock < 10).length;
+
+        const categoryStats = products.reduce((acc, product) => {
+            if (!acc[product.category]) {
+                acc[product.category] = { count: 0, totalStock: 0 };
+            }
+            acc[product.category].count++;
+            acc[product.category].totalStock += product.stock;
+            return acc;
+        }, {});
+
+        res.json({
+            totalProducts,
+            activeProducts,
+            inactiveProducts,
+            totalStock,
+            lowStockProducts,
+            categoryStats
+        });
 
     } catch (error) {
-        console.error('Erro ao listar categorias:', error);
+        console.error('Erro ao obter estatísticas:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });

@@ -12,13 +12,13 @@ class AuthSystem {
 
     setupEventListeners() {
         // Login form
-        const loginForm = document.getElementById('login-form');
+const loginForm = document.getElementById('login-form');
         if (loginForm) {
             loginForm.addEventListener('submit', (e) => this.handleLogin(e));
         }
 
         // Register form
-        const registerForm = document.getElementById('register-form');
+const registerForm = document.getElementById('register-form');
         if (registerForm) {
             registerForm.addEventListener('submit', (e) => this.handleRegister(e));
         }
@@ -37,90 +37,90 @@ class AuthSystem {
     }
 
     async handleLogin(e) {
-        e.preventDefault();
-        
+    e.preventDefault();
+    
         const formData = new FormData(e.target);
-        const loginData = {
-            email: formData.get('email'),
+    const loginData = {
+        email: formData.get('email'),
             password: formData.get('password'),
             remember: formData.get('remember') === 'on'
-        };
+    };
 
-        try {
+    try {
             const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: {
+            method: 'POST',
+            headers: {
                     'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(loginData)
-            });
+            },
+            body: JSON.stringify(loginData)
+        });
 
             const result = await response.json();
 
-            if (response.ok) {
+        if (response.ok) {
                 this.currentUser = result.user;
                 this.saveUserToStorage(result.user, result.token, loginData.remember);
                 this.showNotification('Login realizado com sucesso!', 'success');
                 
                 // Redirect to dashboard or home
-                setTimeout(() => {
+            setTimeout(() => {
                     window.location.href = 'dashboard.html';
-                }, 1000);
-            } else {
+            }, 1000);
+        } else {
                 this.showNotification(result.message || 'Erro ao fazer login', 'error');
-            }
-        } catch (error) {
+        }
+    } catch (error) {
             console.error('Login error:', error);
             this.showNotification('Erro de conexão. Tente novamente.', 'error');
         }
     }
 
     async handleRegister(e) {
-        e.preventDefault();
-        
+    e.preventDefault();
+    
         const formData = new FormData(e.target);
-        const registerData = {
+    const registerData = {
             firstName: formData.get('firstName'),
             lastName: formData.get('lastName'),
-            email: formData.get('email'),
+        email: formData.get('email'),
             phone: formData.get('phone'),
-            password: formData.get('password'),
+        password: formData.get('password'),
             confirmPassword: formData.get('confirmPassword'),
-            role: formData.get('role')
-        };
+        role: formData.get('role')
+    };
 
         // Validate password match
         if (registerData.password !== registerData.confirmPassword) {
             this.showNotification('As senhas não coincidem', 'error');
-            return;
-        }
+        return;
+    }
 
         // Validate password strength
         if (!this.isPasswordStrong(registerData.password)) {
             this.showNotification('A senha deve ter pelo menos 8 caracteres, incluindo letras e números', 'error');
-            return;
-        }
+        return;
+    }
 
-        try {
+    try {
             const response = await fetch('/api/auth/register', {
-                method: 'POST',
-                headers: {
+            method: 'POST',
+            headers: {
                     'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(registerData)
-            });
+            },
+            body: JSON.stringify(registerData)
+        });
 
             const result = await response.json();
 
-            if (response.ok) {
+        if (response.ok) {
                 this.showNotification('Conta criada com sucesso! Faça login para continuar.', 'success');
-                setTimeout(() => {
-                    window.location.href = 'login.html';
-                }, 2000);
-            } else {
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2000);
+        } else {
                 this.showNotification(result.message || 'Erro ao criar conta', 'error');
-            }
-        } catch (error) {
+        }
+    } catch (error) {
             console.error('Register error:', error);
             this.showNotification('Erro de conexão. Tente novamente.', 'error');
         }
@@ -227,18 +227,18 @@ class AuthSystem {
 
     showNotification(message, type = 'info') {
         // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.innerHTML = `
-            <div class="notification-content">
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
                 <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
-                <span>${message}</span>
-            </div>
-        `;
-
+            <span>${message}</span>
+        </div>
+    `;
+    
         // Add to page
-        document.body.appendChild(notification);
-
+    document.body.appendChild(notification);
+    
         // Show notification
         setTimeout(() => {
             notification.classList.add('show');
@@ -247,7 +247,7 @@ class AuthSystem {
         // Remove notification
         setTimeout(() => {
             notification.classList.remove('show');
-            setTimeout(() => {
+    setTimeout(() => {
                 document.body.removeChild(notification);
             }, 300);
         }, 3000);

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Produtos - E2E Commerce</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Cabeçalho -->
+    <header>
+        <div class="header-main">
+            <div class="container">
+                <div class="header-main-content">
+                    <div class="logo">
+                        <a href="index.html">
+                            <img src="https://http2.mlstatic.com/storage/logos-api-admin/a5f047d0-9be0-11ec-aad4-c2181f3a5f8a-m.svg" alt="E2E Commerce" style="height: 34px;">
+                        </a>
+                    </div>
+                    <div class="header-actions">
+                        <div class="user-menu" id="user-menu">
+                            <span class="user-name" id="user-name"></span>
+                            <div class="user-dropdown">
+                                <button class="user-toggle" id="user-toggle">
+                                    <i class="fas fa-user-circle"></i>
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div class="dropdown-menu" id="dropdown-menu">
+                                    <a href="dashboard.html">Dashboard</a>
+                                    <a href="#" onclick="logout()">Sair</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="products-main">
+        <div class="container">
+            <div class="products-header">
+                <h1><i class="fas fa-box"></i> Gestão de Produtos</h1>
+                <p>Consulte produtos e gerencie o estoque em lotes de 10 unidades</p>
+            </div>
+
+            <!-- Filtros e Busca -->
+            <div class="filters-section">
+                <div class="filter-group">
+                    <label for="search-input">Buscar por nome:</label>
+                    <input type="text" id="search-input" placeholder="Digite o nome do produto...">
+                </div>
+                <div class="filter-group">
+                    <label for="category-filter">Categoria:</label>
+                    <select id="category-filter">
+                        <option value="">Todas as categorias</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="sort-select">Ordenar por:</label>
+                    <select id="sort-select">
+                        <option value="name">Nome</option>
+                        <option value="price">Preço</option>
+                        <option value="stock">Estoque</option>
+                        <option value="category">Categoria</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="sort-order">Ordem:</label>
+                    <select id="sort-order">
+                        <option value="asc">Crescente</option>
+                        <option value="desc">Decrescente</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Lista de Produtos -->
+            <div class="products-table-container">
+                <table class="products-table">
+                    <thead>
+                        <tr>
+                            <th>Imagem</th>
+                            <th>Nome</th>
+                            <th>Categoria</th>
+                            <th>Preço</th>
+                            <th>Estoque</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="products-tbody">
+                        <!-- Produtos serão carregados aqui -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação -->
+            <div class="pagination" id="pagination">
+                <!-- Paginação será gerada aqui -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de Detalhes do Produto -->
+    <div class="modal" id="product-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Detalhes do Produto</h2>
+                <button class="close-btn" id="close-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="product-details">
+                <!-- Detalhes do produto serão carregados aqui -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação de Estoque -->
+    <div class="modal" id="stock-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Confirmar Acréscimo de Estoque</h2>
+                <button class="close-btn" id="close-stock-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="stock-confirmation">
+                    <div class="product-info">
+                        <img id="confirm-product-image" src="" alt="Produto">
+                        <div class="product-details">
+                            <h3 id="confirm-product-name"></h3>
+                            <p id="confirm-product-category"></p>
+                            <p>Estoque atual: <strong id="confirm-current-stock"></strong></p>
+                        </div>
+                    </div>
+                    <div class="stock-operation">
+                        <p>Adicionar <strong id="confirm-quantity"></strong> unidades ao estoque?</p>
+                        <p>Novo estoque será: <strong id="confirm-new-stock"></strong></p>
+                    </div>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" id="cancel-stock">Cancelar</button>
+                <button type="button" class="btn-primary" id="confirm-stock">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="auth.js"></script>
+    <script src="gestao-produtos.js"></script>
+</body>
+</html>

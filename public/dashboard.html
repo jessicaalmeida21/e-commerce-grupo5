@@ -66,6 +66,9 @@
                 <button class="tab-btn" data-tab="products" id="products-tab" style="display: none;">
                     <i class="fas fa-box"></i> Produtos
                 </button>
+                <button class="tab-btn" data-tab="stock" id="stock-tab" style="display: none;">
+                    <i class="fas fa-warehouse"></i> Estoque
+                </button>
                 <button class="tab-btn" data-tab="admin" id="admin-tab" style="display: none;">
                     <i class="fas fa-crown"></i> Administração
                 </button>
@@ -162,6 +165,17 @@
                     </div>
                 </div>
 
+                <!-- Tab: Estoque (apenas para operadores e admins) -->
+                <div class="tab-content" id="stock">
+                    <h3>Gestão de Estoque</h3>
+                    <div class="stock-info">
+                        <p>Gerencie o estoque dos produtos em lotes de 10 unidades.</p>
+                        <a href="gestao-produtos.html" class="btn-primary">
+                            <i class="fas fa-warehouse"></i> Acessar Gestão de Produtos
+                        </a>
+                    </div>
+                </div>
+
                 <!-- Tab: Administração (apenas para admin) -->
                 <div class="tab-content" id="admin">
                     <h3>Painel Administrativo</h3>
@@ -175,8 +189,8 @@
                         <div class="admin-card">
                             <i class="fas fa-box"></i>
                             <h4>Gerenciar Produtos</h4>
-                            <p>Administrar todos os produtos da plataforma</p>
-                            <button class="btn-primary" disabled>Em breve</button>
+                            <p>Consultar produtos e gerenciar estoque</p>
+                            <a href="gestao-produtos.html" class="btn-primary">Gerenciar</a>
                         </div>
                         <div class="admin-card">
                             <i class="fas fa-shopping-bag"></i>
