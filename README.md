@@ -1,16 +1,48 @@
-# E-Commerce - Site de Vendas Online
+# 🛒 E2E-Commerce MVP - Plataforma de Marketplace Completa
 
-Um site de e-commerce moderno e responsivo inspirado no Mercado Livre, desenvolvido com HTML, CSS e JavaScript vanilla.
+Uma plataforma completa de marketplace desenvolvida com Node.js, Express, MySQL e frontend responsivo. Sistema completo com autenticação, gestão de produtos, pedidos, pagamentos e logística.
 
-## 🚀 Características
+## 🚀 Características Principais
 
-- **Design Responsivo**: Funciona perfeitamente em dispositivos móveis e desktop
-- **Cor Principal**: Verde (#28a745) seguindo as especificações
-- **Integração com API**: Consome dados de produtos de uma API real
-- **Carrinho de Compras**: Funcionalidade completa de adição e remoção de produtos
-- **Filtros e Busca**: Sistema de busca e filtros por categoria
-- **Paginação**: Navegação eficiente através dos produtos
-- **LocalStorage**: Persistência do carrinho entre sessões
+### 🔐 Sistema de Autenticação Completo
+- **Cadastro e Login** com validação robusta
+- **JWT** para autenticação segura
+- **Roles** (Cliente, Fornecedor, Admin)
+- **Recuperação de senha** por email
+- **Middleware** de autorização
+
+### 🛍️ Gestão de Produtos Avançada
+- **CRUD completo** para fornecedores
+- **Controle de estoque** em tempo real
+- **Aumento de estoque** em lotes de 10
+- **Sistema de categorias** e busca
+- **Validação de dados** rigorosa
+
+### 📦 Sistema de Pedidos Robusto
+- **Criação de pedidos** com validação de estoque
+- **Controle de status** (Aguardando → Pago → Enviado → Entregue)
+- **Histórico completo** de movimentações
+- **Cancelamento** com regras de negócio
+- **Cálculo automático** de frete
+
+### 💳 Sistema de Pagamento Simulado
+- **Cartão de crédito/débito** com validação mock
+- **PIX** com QR Code e polling de status
+- **Parcelamento** com juros de 1% ao mês
+- **Cálculo automático** de parcelas
+- **Validação de cartões** hardcoded
+
+### 🚚 Logística Integrada
+- **Acompanhamento** de pedidos em tempo real
+- **Cálculo de frete** automático (grátis acima de R$399)
+- **Status de entrega** atualizável
+- **Histórico de movimentações** completo
+
+### 📊 Dashboard de Fornecedores
+- **Estatísticas de vendas** em tempo real
+- **Produtos mais vendidos**
+- **Controle de pedidos** recebidos
+- **Gestão de estoque** centralizada
 
 ## 📁 Estrutura do Projeto
 
