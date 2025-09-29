@@ -12,9 +12,11 @@ let users = [
 ];
 
 // Criptografar senhas dos usuários mock
-users.forEach(async user => {
-    await user.hashPassword();
-});
+(async () => {
+    for (const user of users) {
+        await user.hashPassword();
+    }
+})();
 
 // Middleware de autenticação
 const authenticateToken = (req, res, next) => {
