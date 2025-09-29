@@ -76,53 +76,59 @@ const registerForm = document.getElementById('register-form');
     }
 
     async handleRegister(e) {
-    e.preventDefault();
-    
+        e.preventDefault();
+        
         const formData = new FormData(e.target);
-    const registerData = {
+        const registerData = {
             firstName: formData.get('firstName'),
             lastName: formData.get('lastName'),
-        email: formData.get('email'),
+            email: formData.get('email'),
             phone: formData.get('phone'),
-        password: formData.get('password'),
+            password: formData.get('password'),
             confirmPassword: formData.get('confirmPassword'),
-        role: formData.get('role')
-    };
+            role: formData.get('role')
+        };
 
         // Validate password match
         if (registerData.password !== registerData.confirmPassword) {
             this.showNotification('As senhas não coincidem', 'error');
-        return;
-    }
+            return;
+        }
 
         // Validate password strength
         if (!this.isPasswordStrong(registerData.password)) {
             this.showNotification('A senha deve ter pelo menos 8 caracteres, incluindo letras e números', 'error');
-        return;
-    }
-
-    try {
-            const response = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: {
-                    'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(registerData)
-        });
-
-            const result = await response.json();
-
-        if (response.ok) {
-                this.showNotification('Conta criada com sucesso! Faça login para continuar.', 'success');
-            setTimeout(() => {
-                window.location.href = 'login.html';
-            }, 2000);
-        } else {
-                this.showNotification(result.message || 'Erro ao criar conta', 'error');
+            return;
         }
-    } catch (error) {
+
+        // Modo demo - simular cadastro bem-sucedido
+        try {
+            // Simular delay de rede
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Salvar dados no localStorage (modo demo)
+            const userData = {
+                id: Date.now().toString(),
+                firstName: registerData.firstName,
+                lastName: registerData.lastName,
+                email: registerData.email,
+                phone: registerData.phone,
+                role: registerData.role,
+                createdAt: new Date().toISOString()
+            };
+
+            localStorage.setItem('demo_user', JSON.stringify(userData));
+            localStorage.setItem('demo_logged_in', 'true');
+
+            this.showNotification('Conta criada com sucesso! Redirecionando...', 'success');
+            
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+            
+        } catch (error) {
             console.error('Register error:', error);
-            this.showNotification('Erro de conexão. Tente novamente.', 'error');
+            this.showNotification('Erro ao criar conta. Tente novamente.', 'error');
         }
     }
 
