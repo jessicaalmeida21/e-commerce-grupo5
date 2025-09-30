@@ -1,10 +1,5 @@
 // Dashboard JavaScript
 document.addEventListener('DOMContentLoaded', function() {
-    // Verificar autenticação
-    if (!requireAuth()) {
-        return;
-    }
-
     // Inicializar dashboard
     initializeDashboard();
     setupEventListeners();
@@ -314,14 +309,27 @@ function loadProductsData() {
 }
 
 function loadProfileData() {
-    const user = getCurrentUser();
+    // Verificar se está logado em modo demo
+    const isLoggedIn = localStorage.getItem('demo_logged_in');
+    const demoUser = localStorage.getItem('demo_user');
+    
+    let user = null;
+    if (isLoggedIn === 'true' && demoUser) {
+        user = JSON.parse(demoUser);
+    }
+
     if (!user) return;
 
     // Preencher formulário de perfil
-    document.getElementById('profile-name').value = user.name || '';
-    document.getElementById('profile-email').value = user.email || '';
-    document.getElementById('profile-phone').value = user.phone || '';
-    document.getElementById('profile-address').value = user.address || '';
+    const profileName = document.getElementById('profile-name');
+    const profileEmail = document.getElementById('profile-email');
+    const profilePhone = document.getElementById('profile-phone');
+    const profileAddress = document.getElementById('profile-address');
+
+    if (profileName) profileName.value = `${user.firstName} ${user.lastName}` || '';
+    if (profileEmail) profileEmail.value = user.email || '';
+    if (profilePhone) profilePhone.value = user.phone || '';
+    if (profileAddress) profileAddress.value = user.address || '';
 }
 
 function handleProfileUpdate(e) {
@@ -335,15 +343,19 @@ function handleProfileUpdate(e) {
         address: formData.get('address')
     };
 
-    // Simular atualização do perfil
-    showNotification('Perfil atualizado com sucesso!', 'success');
+    // Atualizar dados do usuário no localStorage (modo demo)
+    const isLoggedIn = localStorage.getItem('demo_logged_in');
+    const demoUser = localStorage.getItem('demo_user');
     
-    // Atualizar dados do usuário no localStorage
-    const user = getCurrentUser();
-    if (user) {
-        Object.assign(user, profileData);
-        localStorage.setItem('user', JSON.stringify(user));
+    if (isLoggedIn === 'true' && demoUser) {
+        const user = JSON.parse(demoUser);
+        user.phone = profileData.phone;
+        user.address = profileData.address;
+        localStorage.setItem('demo_user', JSON.stringify(user));
     }
+
+    // Simular atualização do perfil
+    alert('Perfil atualizado com sucesso!');
 }
 
 function handlePasswordChange(e) {
