@@ -123,8 +123,20 @@ const registerForm = document.getElementById('register-form');
             return;
         }
 
+        // Validar que nome não contenha números
+        if (/\d/.test(registerData.firstName)) {
+            alert('O nome não pode conter números. Digite apenas letras.');
+            return;
+        }
+
         if (!registerData.lastName || !registerData.lastName.trim()) {
             alert('Por favor, preencha o sobrenome.');
+            return;
+        }
+
+        // Validar que sobrenome não contenha números
+        if (/\d/.test(registerData.lastName)) {
+            alert('O sobrenome não pode conter números. Digite apenas letras.');
             return;
         }
 
@@ -150,6 +162,13 @@ const registerForm = document.getElementById('register-form');
             return;
         }
 
+        // Validar que telefone contenha apenas números (removendo máscara)
+        const phoneNumbers = registerData.phone.replace(/\D/g, '');
+        if (!/^\d+$/.test(phoneNumbers) || phoneNumbers.length < 10) {
+            alert('O telefone deve conter apenas números e ter pelo menos 10 dígitos.');
+            return;
+        }
+
         if (!registerData.password || !registerData.password.trim()) {
             alert('Por favor, preencha a senha.');
             return;
@@ -161,7 +180,14 @@ const registerForm = document.getElementById('register-form');
         }
 
         if (!registerData.role || registerData.role === '') {
-            alert('Por favor, selecione o tipo de conta.');
+            alert('Por favor, selecione o perfil (Cliente ou Vendedor).');
+            return;
+        }
+
+        // Verificar se aceitou os termos
+        const termsAccepted = document.getElementById('terms');
+        if (!termsAccepted || !termsAccepted.checked) {
+            alert('Você deve aceitar os Termos de Uso e Política de Privacidade para continuar.');
             return;
         }
 
