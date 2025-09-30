@@ -31,10 +31,10 @@ function initializeDashboard() {
     // Atualizar informações do perfil
     updateProfileInfo(user);
 
-    // Mostrar/ocultar tabs baseado no role
+    // Mostrar/ocultar tabs baseado no perfil
     const productsTab = document.getElementById('products-tab');
     if (productsTab) {
-        if (user.role === 'supplier' || user.role === 'admin') {
+        if (user.role === 'vendedor') {
             productsTab.style.display = 'block';
         } else {
             productsTab.style.display = 'none';
@@ -43,7 +43,7 @@ function initializeDashboard() {
 
     const stockTab = document.getElementById('stock-tab');
     if (stockTab) {
-        if (['operator', 'admin'].includes(user.role)) {
+        if (user.role === 'vendedor') {
             stockTab.style.display = 'block';
         } else {
             stockTab.style.display = 'none';
@@ -52,11 +52,7 @@ function initializeDashboard() {
 
     const adminTab = document.getElementById('admin-tab');
     if (adminTab) {
-        if (user.role === 'admin') {
-            adminTab.style.display = 'block';
-        } else {
-            adminTab.style.display = 'none';
-        }
+        adminTab.style.display = 'none'; // Não há admin no sistema atual
     }
 
     // Carregar dados do perfil
@@ -690,13 +686,13 @@ function updateProfileInfo(user) {
     if (profilePhone) profilePhone.value = user.phone || '';
     if (profileRole) profileRole.value = user.role;
 
-    // Atualizar título do dashboard baseado no tipo de usuário
+    // Atualizar título do dashboard baseado no perfil
     const dashboardTitle = document.querySelector('.dashboard-header h1');
     if (dashboardTitle) {
-        if (user.role === 'client') {
+        if (user.role === 'cliente') {
             dashboardTitle.textContent = 'Meu Dashboard - Cliente';
-        } else if (user.role === 'supplier') {
-            dashboardTitle.textContent = 'Dashboard do Fornecedor';
+        } else if (user.role === 'vendedor') {
+            dashboardTitle.textContent = 'Dashboard do Vendedor';
         } else {
             dashboardTitle.textContent = 'Dashboard';
         }

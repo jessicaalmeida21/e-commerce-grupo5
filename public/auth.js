@@ -2,6 +2,7 @@
 class AuthSystem {
     constructor() {
         this.currentUser = null;
+        this.inactivityTimer = null;
         this.init();
     }
 
@@ -9,6 +10,7 @@ class AuthSystem {
         this.loadUserFromStorage();
         this.setupEventListeners();
         this.fillLoginFieldsFromUrl();
+        this.setupInactivityTimer();
     }
 
     setupEventListeners() {
@@ -70,19 +72,17 @@ const registerForm = document.getElementById('register-form');
         }
 
         // Modo demo - verificar se há usuário cadastrado
-        const savedUser = localStorage.getItem('demo_user');
-        console.log('Usuário salvo:', savedUser);
+        const existingUsers = JSON.parse(localStorage.getItem('demo_users')) || [];
+        console.log('Usuários cadastrados:', existingUsers);
         
-        if (!savedUser) {
+        if (existingUsers.length === 0) {
             alert('Nenhuma conta encontrada. Faça o cadastro primeiro.');
             return;
         }
 
-        const userData = JSON.parse(savedUser);
-        console.log('Dados do usuário:', userData);
-        
         // Verificar se o email corresponde
-        if (userData.email !== loginData.email) {
+        const userData = existingUsers.find(user => user.email === loginData.email);
+        if (!userData) {
             alert('Email não encontrado. Verifique o email digitado.');
             return;
         }
@@ -93,13 +93,13 @@ const registerForm = document.getElementById('register-form');
         
         alert(`Bem-vindo, ${userData.firstName}! Redirecionando para seu dashboard...`);
         
-        // Redirecionar para dashboard baseado no tipo de conta
-        if (userData.role === 'client') {
-            window.location.href = 'dashboard.html';
-        } else if (userData.role === 'supplier') {
-            window.location.href = 'dashboard.html';
+        // Redirecionar baseado no perfil
+        if (userData.role === 'cliente') {
+            window.location.href = 'index.html'; // Cliente vai para loja
+        } else if (userData.role === 'vendedor') {
+            window.location.href = 'dashboard.html'; // Vendedor vai para dashboard
         } else {
-            window.location.href = 'dashboard.html';
+            window.location.href = 'index.html';
         }
     }
 
@@ -138,6 +138,13 @@ const registerForm = document.getElementById('register-form');
             return;
         }
 
+        // Verificar se email já existe (modo demo)
+        const existingUsers = JSON.parse(localStorage.getItem('demo_users')) || [];
+        if (existingUsers.some(user => user.email === registerData.email)) {
+            alert('Este email já está cadastrado no sistema.');
+            return;
+        }
+
         if (!registerData.phone || !registerData.phone.trim()) {
             alert('Por favor, preencha o telefone.');
             return;
@@ -166,7 +173,7 @@ const registerForm = document.getElementById('register-form');
 
         // Validate password strength
         if (!this.isPasswordStrong(registerData.password)) {
-            alert('A senha deve ter pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas e números');
+            alert('A senha deve ter pelo menos 10 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais (!@#$%^&*)');
             return;
         }
 
@@ -186,6 +193,12 @@ const registerForm = document.getElementById('register-form');
                 createdAt: new Date().toISOString()
             };
 
+            // Salvar no sistema de múltiplos usuários
+            const existingUsers = JSON.parse(localStorage.getItem('demo_users')) || [];
+            existingUsers.push(userData);
+            localStorage.setItem('demo_users', JSON.stringify(existingUsers));
+            
+            // Salvar como usuário atual
             localStorage.setItem('demo_user', JSON.stringify(userData));
 
             alert('Conta criada com sucesso! Redirecionando para login...');
@@ -248,10 +261,11 @@ const registerForm = document.getElementById('register-form');
     }
 
     isPasswordStrong(password) {
-        return password.length >= 8 && 
+        return password.length >= 10 && 
                /[a-z]/.test(password) && 
                /[A-Z]/.test(password) && 
-               /[0-9]/.test(password);
+               /[0-9]/.test(password) &&
+               /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
     }
 
     isValidEmail(email) {
@@ -291,6 +305,36 @@ const registerForm = document.getElementById('register-form');
                 passwordInput.value = password;
             }
         }
+    }
+
+    setupInactivityTimer() {
+        // Limpar timer existente
+        if (this.inactivityTimer) {
+            clearTimeout(this.inactivityTimer);
+        }
+
+        // Definir novo timer de 30 minutos (1800000 ms)
+        this.inactivityTimer = setTimeout(() => {
+            if (this.currentUser) {
+                this.autoLogout();
+            }
+        }, 30 * 60 * 1000); // 30 minutos
+
+        // Resetar timer em atividade do usuário
+        document.addEventListener('click', () => this.resetInactivityTimer());
+        document.addEventListener('keypress', () => this.resetInactivityTimer());
+        document.addEventListener('scroll', () => this.resetInactivityTimer());
+    }
+
+    resetInactivityTimer() {
+        if (this.currentUser) {
+            this.setupInactivityTimer();
+        }
+    }
+
+    autoLogout() {
+        alert('Sessão expirada por inatividade. Você será redirecionado para o login.');
+        this.logout();
     }
 
     checkPasswordMatch() {

@@ -80,12 +80,11 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="role">Tipo de Conta</label>
+                            <label for="role">Perfil</label>
                             <select id="role" name="role" required>
-                                <option value="">Selecione o tipo de conta</option>
-                                <option value="client">Cliente - Comprar produtos</option>
-                                <option value="supplier">Fornecedor - Vender produtos</option>
-                                <option value="operator">Operador - Gerenciar pedidos</option>
+                                <option value="">Selecione o perfil</option>
+                                <option value="cliente">Cliente - Navegar na loja e comprar</option>
+                                <option value="vendedor">Vendedor - Consultar pedidos e atender clientes</option>
                             </select>
                         </div>
                         
@@ -229,16 +228,16 @@
             let strength = 0;
             let strengthLabel = '';
 
-            if (password.length >= 8) strength++;
+            if (password.length >= 10) strength++;
             if (/[a-z]/.test(password)) strength++;
             if (/[A-Z]/.test(password)) strength++;
             if (/[0-9]/.test(password)) strength++;
-            if (/[^A-Za-z0-9]/.test(password)) strength++;
+            if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) strength++;
 
             switch (strength) {
                 case 0:
                 case 1:
-                    strengthLabel = 'Muito fraca';
+                    strengthLabel = 'Muito fraca (min. 10 chars + letras + números + especiais)';
                     strengthFill.className = 'strength-fill weak';
                     strengthFill.style.width = '20%';
                     break;
