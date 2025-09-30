@@ -3,6 +3,7 @@ class AuthSystem {
     constructor() {
         this.currentUser = null;
         this.inactivityTimer = null;
+        this.eventListenersAdded = false;
         this.init();
     }
 
@@ -10,7 +11,8 @@ class AuthSystem {
         this.loadUserFromStorage();
         this.setupEventListeners();
         this.fillLoginFieldsFromUrl();
-        this.setupInactivityTimer();
+        // Temporariamente desabilitar timer para evitar travamento
+        // this.setupInactivityTimer();
     }
 
     setupEventListeners() {
@@ -346,15 +348,23 @@ const registerForm = document.getElementById('register-form');
             }
         }, 30 * 60 * 1000); // 30 minutos
 
-        // Resetar timer em atividade do usuário
-        document.addEventListener('click', () => this.resetInactivityTimer());
-        document.addEventListener('keypress', () => this.resetInactivityTimer());
-        document.addEventListener('scroll', () => this.resetInactivityTimer());
+        // Adicionar event listeners apenas uma vez
+        if (!this.eventListenersAdded) {
+            document.addEventListener('click', () => this.resetInactivityTimer());
+            document.addEventListener('keypress', () => this.resetInactivityTimer());
+            document.addEventListener('scroll', () => this.resetInactivityTimer());
+            this.eventListenersAdded = true;
+        }
     }
 
     resetInactivityTimer() {
-        if (this.currentUser) {
-            this.setupInactivityTimer();
+        if (this.currentUser && this.inactivityTimer) {
+            clearTimeout(this.inactivityTimer);
+            this.inactivityTimer = setTimeout(() => {
+                if (this.currentUser) {
+                    this.autoLogout();
+                }
+            }, 30 * 60 * 1000); // 30 minutos
         }
     }
 
