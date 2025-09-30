@@ -195,30 +195,40 @@ function generateStars(rating) {
 // Adicionar produto ao carrinho
 async function addToCart(productId, productName, price, imageUrl) {
     try {
-        const user = getCurrentUser();
-        if (!user) {
-            alert('Você precisa estar logado para adicionar produtos ao carrinho.');
-            window.location.href = 'login.html';
-            return;
-        }
+        // Modo demo - permitir carrinho sem login
+        // const user = getCurrentUser();
+        // if (!user) {
+        //     alert('Você precisa estar logado para adicionar produtos ao carrinho.');
+        //     window.location.href = 'login.html';
+        //     return;
+        // }
 
-        const response = await fetch('/api/cart/add', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getAuthToken()}`
-            },
-            body: JSON.stringify({ productId, quantity: 1 })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            showNotification('Produto adicionado ao carrinho!', 'success');
-            updateCartCount();
+        // Modo demo - usar localStorage
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        
+        // Verificar se o produto já está no carrinho
+        const existingItem = cart.find(item => item.id === productId);
+        
+        if (existingItem) {
+            existingItem.quantity += 1;
         } else {
-            const error = await response.json();
-            showNotification(error.error || 'Erro ao adicionar produto', 'error');
+            cart.push({
+                id: productId,
+                name: productName,
+                price: price,
+                image: imageUrl,
+                quantity: 1
+            });
         }
+        
+        // Salvar no localStorage
+        localStorage.setItem('cart', JSON.stringify(cart));
+        
+        // Atualizar contador do carrinho
+        updateCartCount(cart.reduce((total, item) => total + item.quantity, 0));
+        
+        // Mostrar notificação
+        showNotification('Produto adicionado ao carrinho!', 'success');
     } catch (error) {
         console.error('Erro ao adicionar ao carrinho:', error);
         showNotification('Erro de conexão', 'error');
@@ -238,29 +248,20 @@ function updateCartUI() {
 }
 
 // Atualizar contador do carrinho
-async function updateCartCount() {
+function updateCartCount(count = null) {
     const cartCount = document.getElementById('cart-count');
     if (!cartCount) return;
 
+    if (count !== null) {
+        cartCount.textContent = count;
+        return;
+    }
+
+    // Modo demo - usar localStorage
     try {
-        const user = getCurrentUser();
-        if (!user) {
-            cartCount.textContent = '0';
-            return;
-        }
-
-        const response = await fetch('/api/cart', {
-            headers: {
-                'Authorization': `Bearer ${getAuthToken()}`
-            }
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            cartCount.textContent = data.itemCount;
-        } else {
-            cartCount.textContent = '0';
-        }
+        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+        const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
+        cartCount.textContent = totalItems;
     } catch (error) {
         console.error('Erro ao atualizar contador do carrinho:', error);
         cartCount.textContent = '0';
