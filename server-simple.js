@@ -174,4 +174,6 @@ app.listen(PORT, () => {
     console.log(`   🔔 Notificações Toast`);
     console.log(`   🛒 Carrinho de Compras`);
     console.log(`   📱 Design Responsivo`);
+    console.log(`   🔒 Validações Rigorosas`);
+    console.log(`   👥 Gestão de Usuários`);
 });
